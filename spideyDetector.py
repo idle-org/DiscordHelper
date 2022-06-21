@@ -2,7 +2,7 @@
 
 """ Main program """
 
-from modules import spidey_detector, agnostic_paths
+from modules import test_interface, agnostic_paths
 import argparse
 import sys
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     args = parse(sys.argv[1:])
     agnostic_path = agnostic_paths.AgnosticPaths(ptb=args.ptb)
     try:
-        spd = spidey_detector.run_check(args, agnostic_path)
+        spd = test_interface.run_check(args, agnostic_path)
 
     except FileNotFoundError as er:
         print(er)
