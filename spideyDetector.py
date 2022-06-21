@@ -16,6 +16,7 @@ def parse(_args):
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
     parser.add_argument('-s', '--silent', action='store_true', help='Silent mode')
+    parser.add_argument('--spidey', action='store_true', help='Runs the spidey test')
     parser.add_argument('--line-count', action='store_true', help='Test all known files for line count')
     parser.add_argument('--file-count', action='store_true', help="Test the number of files in the discord folder")
     parser.add_argument('--file-size', action='store_true', help="Test the size of the files in the discord folder")

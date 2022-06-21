@@ -2,6 +2,10 @@ import os
 import re
 import sys
 
+_TEST_MODULES = {  # argparse argument : [module_name, class_name]
+    "spidey": ["spidey_test", "spidey"],
+}
+
 
 class SpideyDetector:
     def __init__(self, args, agnpath):
@@ -18,13 +22,24 @@ class SpideyDetector:
         self.main_path = agnpath.main_path
         self.latest_version = agnpath.latest_version
         # self.is_windows = self.check_os()
-        self.is_infected = False
+        self.is_infected = 0
         self.detections = 0
         self.test_run = {}
 
-        # self.paths = self.check_paths(*self.get_path())
-        # self.spidey_check()
+        self.loaded_modules = self.get_module_list()
+        self.spidey_check()
 
+    def get_module_list(self):
+        """
+        Gets the list of modules to be loaded (in accordance to the config)
+        :return: List of modules
+        :rtype: list
+        """
+        modules = []
+        for module in _TEST_MODULES:
+
+            if module[0] in self.loaded_modules:
+                modules.append(module[1])
     def check_os(self):  # noqa
         if not sys.platform.startswith('win'):
             raise OSError("This script can only check for Spideys on Windows.")
