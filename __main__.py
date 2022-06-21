@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-""" Main program"""
+""" Main program """
 
 from modules import spidey_detector
 import argparse
