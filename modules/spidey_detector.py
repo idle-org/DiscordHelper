@@ -4,12 +4,12 @@ import sys
 
 
 class SpideyDetector:
-    def __init__(self, ptb=False):
+    def __init__(self, args):
         """
         :param ptb: Whether you're using discord Public Test Version
         :type ptb: bool
         """
-        if ptb:
+        if args.ptb:
             self.ptb = "PTB"
         else:
             self.ptb = ""
