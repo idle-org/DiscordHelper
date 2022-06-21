@@ -90,5 +90,13 @@ class SpideyDetector:
         return self.is_infected
 
 
+def run_check(ptb):
+    spd = SpideyDetector(ptb)
+    if not spd.is_infected:
+        return 0
+    else:
+        return 1
+
+
 if __name__ == "__main__":
-    SD = SpideyDetector(True)
+    pass
