@@ -11,8 +11,7 @@ class AgnosticPaths:
         self.ptb = ptb
         self.os = self.get_os()
         self.main_path = self.get_path()
-        self.versions = self.get_versions()
-        self.latest_version = self.get_latest_version()
+        self.versions = self.get_version()
 
     def get_os(self):
         platform = sys.platform
@@ -24,33 +23,39 @@ class AgnosticPaths:
             self.os = 'mac'
         else:
             raise OSError("This script can only check for Spideys on Windows, Linux and Mac.")
-        if self.os == 'linux' or self.os == 'mac':
-            raise OSError("This script can only check for Spideys on Windows for now.")
         return self.os
 
     def get_path(self):
         if self.os == 'windows':
             return os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord{self.ptb}")
         elif self.os == 'linux':
-            return ""
+            return os.path.join("/","opt","discord")
+            #return os.path.join("usr","share","discord")
         elif self.os == 'mac':
             return ""
+        raise OSError("Cannot detect discord PATH")
 
-    def get_versions(self):
+    def get_version(self):
         """
         Looks for the version file in the discord folder
         """
         versions = []
-        for element in os.listdir(self.main_path):
-            if re.match(r"app-[\d\.]+", element):
-                versions.append(element)
-        if not versions:
-            raise FileNotFoundError("Could not find discord version folder.")
-        versions.sort()
-        return versions
+        if self.os == 'windows':
+            for element in os.listdir(self.main_path):
+                if re.match(r"app-[\d\.]+", element):
+                    versions.append(element)
+            if not versions:
+                raise FileNotFoundError("Could not find discord version folder.")
+            versions.sort()
+            return versions[-1]
+        if self.os == 'linux':
+            from json import load
+            with open(os.path.join(self.main_path,'resources','build_info.json')) as versionFile:
+                versions = load(versionFile)
+            return versions['version']
 
-    def get_latest_version(self):
-        return self.versions[-1]
+
+
 
     def list(self, *args):
         """
@@ -96,5 +101,6 @@ class AgnosticPaths:
 if __name__ == '__main__':
     path = AgnosticPaths("")
     print(path)
+    print(path.versions)
     print(path.list_dir_files())
     print(path.list())
