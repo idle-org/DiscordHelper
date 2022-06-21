@@ -2,7 +2,7 @@
 
 """ Main program """
 
-from modules import spidey_detector, agnostic_paths
+from modules import test_interface, agnostic_paths
 import argparse
 import sys
 
@@ -16,6 +16,7 @@ def parse(_args):
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
     parser.add_argument('-s', '--silent', action='store_true', help='Silent mode')
+    parser.add_argument('--spidey', action='store_true', help='Runs the spidey test')
     parser.add_argument('--line-count', action='store_true', help='Test all known files for line count')
     parser.add_argument('--file-count', action='store_true', help="Test the number of files in the discord folder")
     parser.add_argument('--file-size', action='store_true', help="Test the size of the files in the discord folder")
@@ -34,7 +35,7 @@ if __name__ == "__main__":
     args = parse(sys.argv[1:])
     agnostic_path = agnostic_paths.AgnosticPaths(ptb=args.ptb)
     try:
-        spd = spidey_detector.run_check(args, agnostic_path)
+        spd = test_interface.run_check(args, agnostic_path)
 
     except FileNotFoundError as er:
         print(er)
