@@ -7,7 +7,7 @@ import sys
 
 
 class AgnosticPaths:
-    def __init__(self, ptb):
+    def __init__(self, ptb, forced_path=None):
         self.ptb = ptb
         self.os = self.get_os()
         self.main_path = self.get_path()

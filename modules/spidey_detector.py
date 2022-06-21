@@ -4,19 +4,26 @@ import sys
 
 
 class SpideyDetector:
-    def __init__(self, args):
+    def __init__(self, args, agnpath):
         """
-        :param ptb: Whether you're using discord Public Test Version
-        :type ptb: bool
+        Main spidey runner
+        :param args: List of arguments
+        :type args: argparse.Namespace
+        :param agnpath: The path to the discord folder
+        :type agnpath: agnostic_path.AgnosticPath
         """
-        if args.ptb:
-            self.ptb = "PTB"
-        else:
-            self.ptb = ""
-        self.is_windows = self.check_os()
+        self.ptb = args.ptb
+        self.agnostic_path = agnpath
+        self.os_name = agnpath.os
+        self.main_path = agnpath.main_path
+        self.latest_version = agnpath.latest_version
+        # self.is_windows = self.check_os()
         self.is_infected = False
-        self.paths = self.check_paths(*self.get_path())
-        self.spidey_check()
+        self.detections = 0
+        self.test_run = {}
+
+        # self.paths = self.check_paths(*self.get_path())
+        # self.spidey_check()
 
     def check_os(self):  # noqa
         if not sys.platform.startswith('win'):
@@ -90,8 +97,8 @@ class SpideyDetector:
         return self.is_infected
 
 
-def run_check(ptb):
-    spd = SpideyDetector(ptb)
+def run_check(args, agnpath):
+    spd = SpideyDetector(args, agnpath)
     if not spd.is_infected:
         return 0
     else:

@@ -2,7 +2,7 @@
 
 """ Main program """
 
-from modules import spidey_detector
+from modules import spidey_detector, agnostic_paths
 import argparse
 import sys
 
@@ -12,7 +12,7 @@ def parse(_args):
         prog="Spidey Detector",
         description='Checks for corrupt discord install'
     )
-    parser.add_argument('--ptb', action='store_true', help='Use Public Test Version')
+    parser.add_argument('--ptb', action='store_const', const="PTB", default="", help='Use Public Test Version')
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
     parser.add_argument('-s', '--silent', action='store_true', help='Silent mode')
@@ -32,8 +32,10 @@ def parse(_args):
 
 if __name__ == "__main__":
     args = parse(sys.argv[1:])
+    agnostic_path = agnostic_paths.AgnosticPaths(ptb=args.ptb)
     try:
-        spd = spidey_detector.run_check(args)
+        spd = spidey_detector.run_check(args, agnostic_path)
+
     except FileNotFoundError as er:
         print(er)
         sys.exit(1)
