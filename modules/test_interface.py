@@ -3,12 +3,17 @@ import re
 import sys
 import importlib
 
-_TEST_MODULES = {  # argparse argument : [module_name, class_name]
+"""
+All modules that can be tested
+Associate the arguments passed to the command line with the modules to be loaded
+argparse argument : [module_name, class_name]
+"""
+_TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
 }
 
 
-class SpideyDetector:
+class TestRunner:
     def __init__(self, args, agnpath):
         """
         Main spidey runner
@@ -23,7 +28,7 @@ class SpideyDetector:
         self.os_name = agnpath.os
         self.main_path = agnpath.main_path
         self.version = agnpath.version
-        # self.is_windows = self.check_os()
+
         self.is_infected = 0
         self.detections = 0
         self.test_run = {}
@@ -56,8 +61,9 @@ class SpideyDetector:
 
     def exec_all_tests(self):
         """
-        Executes all the tests
-        :return:
+        Executes all the tests (later in parallel), get their result as they finishes
+        :return: The number of test ran, success, failures, skipped (with ran = success+failures+skip)
+        :rtype: (int,int,int,int) # TODO: Change this to a nametuple
         """
         for module_name, test_class in self.loaded_test_classes.items():
             tc = test_class(self.args, self.agnostic_path, None)
@@ -65,8 +71,8 @@ class SpideyDetector:
             print(tc)
 
 
-def run_check(args, agnpath):
-    spd = SpideyDetector(args, agnpath)
+def run_check(args, agnpath):  # Todo, skip the is_infected check and defer everything to the exec_all_tests
+    spd = TestRunner(args, agnpath)
     if not spd.is_infected:
         return 0
     else:
