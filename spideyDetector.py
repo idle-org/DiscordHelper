@@ -7,7 +7,7 @@ import argparse
 import sys
 
 
-def parse(_args):
+def parse(_args): # TODO: Move this to a arg_parsing module
     parser = argparse.ArgumentParser(
         prog="Spidey Detector",
         description='Checks for corrupt discord install'
@@ -28,12 +28,13 @@ def parse(_args):
     parser.add_argument('--analyze', action='store_true', help="Analyze the files in the discord folder for known js obfuscators")
     parser.add_argument('--all', action='store_true', help="Run all tests in parallel, and wait for a potential interupt")
     parser.add_argument('--launch', action='store_true', help="Launch the discord client after the tests are done")
+    parser.add_argument("--force-path", nargs=1, default="", help="Bypass the automatic path discovery with given path")
     return parser.parse_args(_args)
 
 
 if __name__ == "__main__":
     args = parse(sys.argv[1:])
-    agnostic_path = agnostic_paths.AgnosticPaths(ptb=args.ptb)
+    agnostic_path = agnostic_paths.AgnosticPaths(ptb=args.ptb, force_path=args.force_path)
     try:
         spd = test_interface.run_check(args, agnostic_path)
 
@@ -45,5 +46,5 @@ if __name__ == "__main__":
         sys.exit(1)
 
     if spd == 0:
-        print("SpideyDetector could not find anything wrong with your discord install!")
+        print("TestRunner could not find anything wrong with your discord install!") # TODO: Everything should be in the run_all_tests()
     sys.exit(spd)
