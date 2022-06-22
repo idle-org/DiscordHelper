@@ -54,8 +54,8 @@ class AgnosticPaths:
         if self.os == 'windows':
             return os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord{self.ptb}")
         elif self.os == 'linux':
-            return os.path.join("/","opt","discord")
-            #return os.path.join("usr","share","discord")
+            return os.path.join("/", "opt", "discord")
+            # return os.path.join("usr","share","discord")
         elif self.os == 'mac':
             return ""
         raise OSError("Cannot detect discord PATH")
@@ -78,7 +78,7 @@ class AgnosticPaths:
             return versions[-1]
         elif self.os == 'linux':
             from json import load
-            with open(os.path.join(self.main_path,'resources','build_info.json')) as versionFile:
+            with open(self('resources', 'build_info.json'), "r") as versionFile:
                 versions = load(versionFile)
             return versions['version']
         else:
@@ -158,5 +158,7 @@ if __name__ == '__main__':
     path = AgnosticPaths("")
     print(path)
     print(path.version)
-    print(path.list_dir_files())
     print(path.list())
+    print(path())
+    print(path("resources", "bootstrap"))  # Return the main_path plus resources, bootstrap
+    print(path.list_dir_files("resources", "bootstrap"))  # List the base_path/resources/bootstrap and return [[folders], [files]]
