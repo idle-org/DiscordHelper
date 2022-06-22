@@ -29,6 +29,9 @@ def parse(_args): # TODO: Move this to a arg_parsing module
     parser.add_argument('--all', action='store_true', help="Run all tests in parallel, and wait for a potential interupt")
     parser.add_argument('--launch', action='store_true', help="Launch the discord client after the tests are done")
     parser.add_argument("--force-path", nargs=1, default="", help="Bypass the automatic path discovery with given path")
+    parser.add_argument("--only-known-paths", "--fast", action='store_true', help="Only run the check on the known paths")
+    parser.add_argument("--no-eval", action="store_true", help="Check for the eval function wich is a HUGE red flag")
+    parser.add_argument("--const-abuse", "--no-const", action="store_true", help="Check for the abuse of the const: keyword, wich is massively used for obfucation")
     return parser.parse_args(_args)
 
 
