@@ -11,7 +11,7 @@ class AgnosticPaths:
     An agnostic path object, containing all methods to access the files and folders in a standard discord install
     """
     
-    def __init__(self, ptb, forced_path=None):
+    def __init__(self, ptb, force_path=""):
         """
         :param ptb: Whether the discord is a public beta install (ptb="PTB") or not (ptb="")
         :type ptb: str
@@ -20,6 +20,7 @@ class AgnosticPaths:
         """
         self.ptb = ptb
         self.os = self.get_os()
+        self.force_path = force_path[0]
         self.main_path = self._get_path()
         self.version = self.get_version()
         self._update_path()
@@ -51,6 +52,8 @@ class AgnosticPaths:
         :return: Base path of the install (minus the version on windows)
         :rtype: str
         """
+        if self.force_path != "":
+            return self.force_path
         if self.os == 'windows':
             return os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord{self.ptb}")
         elif self.os == 'linux':
