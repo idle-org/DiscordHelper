@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 
@@ -17,6 +18,7 @@ class SpideyTest:
         self.os_name = agnpath.os
         self.main_path = agnpath.main_path
         self.test_data = test_data
+        self.alive = True
 
     def run_test(self):
         """
@@ -25,6 +27,9 @@ class SpideyTest:
         :return: Whether any of the index.js is more than one line
         :rtype: bool
         """
+        import random, time
+        # Wait a random amount of time to make sure the files are loaded
+        time.sleep(random.randint(1, 5))
         paths = self.get_path()
         self.is_infected = False
         lines = 0
@@ -75,4 +80,16 @@ class SpideyTest:
         :rtype: (int, str)
         """
         # TODO: Make use of a global_dict
-        return (self.get_status_code(), "")
+        return self.get_status_code(), ""
+
+
+async def main(args, agnpath, test_data):
+    """
+    The main function of the test.
+    :return: The status of the test
+    :rtype: (int, str)
+    """
+    spidey_test = SpideyTest(args, agnpath, test_data)
+    await asyncio.sleep(5)
+    spidey_test.run_test()
+    return spidey_test.get_status()
