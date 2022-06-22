@@ -48,7 +48,6 @@ class TestRunner:
         classes = {}
         try:
             for module_name, values in _TEST_MODULES.items():
-                print(values[0])
                 if self.args.__getattribute__(module_name):
                     modules[values[0]] = importlib.import_module(f"modules.{values[0]}")
                     classes[values[0]] = getattr(modules[values[0]], values[1])
@@ -68,7 +67,6 @@ class TestRunner:
         for module_name, test_class in self.loaded_test_classes.items():
             tc = test_class(self.args, self.agnostic_path, None)
             tc.run_test()
-            print(tc)
 
 
 def run_check(args, agnpath):  # Todo, skip the is_infected check and defer everything to the exec_all_tests
