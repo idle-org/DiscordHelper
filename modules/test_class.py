@@ -38,3 +38,21 @@ class Test:
         :rtype: str
         """
         return self.status
+
+    def get_status_from_code(self):
+        """
+        :return: Description of the status code
+        :rtype: str
+        """
+        return self.return_code_dict[self.status_code]
+
+    def set_status(self, statuscode: int):
+        """
+        Sets a new status code.
+        :param statuscode: Status code to set
+        :type statuscode: int
+        :return: new status code
+        :rtype: int
+        """
+        self.status_code = statuscode
+        return self.status_code
