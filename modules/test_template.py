@@ -1,4 +1,4 @@
-class Test:
+class TestTemplate:
     def __init__(self, args, agnpath, test_data):
         """
         Simple test template.
@@ -39,12 +39,13 @@ class Test:
         """
         return self.status
 
-    def get_status_from_code(self):
+    @static
+    def get_status_from_code(code):
         """
         :return: Description of the status code
         :rtype: str
         """
-        return self.return_code_dict[self.status_code]
+        return self.return_code_dict[code]
 
     def set_status(self, statuscode: int):
         """
@@ -55,4 +56,5 @@ class Test:
         :rtype: int
         """
         self.status_code = statuscode
+        self.status = self.get_status_from_code(statuscode)
         return self.status_code
