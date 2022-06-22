@@ -58,3 +58,21 @@ class SpideyTest:
         discord_modules = self.agnostic_path("modules", "discord_modules-1", "discord_modules")
         discord_desktop_core = self.agnostic_path("modules", "discord_desktop_core-1", "discord_desktop_core")
         return discord_modules, discord_desktop_core
+
+    def get_status_code(self):
+        """
+        The status code of the test
+        :return: 0: The test was not run, 1: The test is running, 2: The test is a success, 3: Test has failed, 4: Test found problems
+        :rtype: int
+        """
+        # TODO: Add this to a global_dict
+        return 0
+
+    def get_status(self):
+        """
+        Return the status of the test, as a string, as the test is ran
+        :return: "Test is running", "Test was not run", "Test was run and nothing was detected", "Test was run and some problems were detected (list of problems)"
+        :rtype: (int, str)
+        """
+        # TODO: Make use of a global_dict
+        return (self.get_status_code(), "")
