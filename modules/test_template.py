@@ -39,6 +39,8 @@ class TestTemplate:
         self.queue = queue
         self.set_status("idle")
         self.queue_lock = queue_lock
+        self.failure_dict = {}
+        self.data = {}
 
     def run_test(self):
         """
@@ -67,7 +69,7 @@ class TestTemplate:
         :return: Status at the time of call.
         :rtype: internal_io.test_status
         """
-        return internal_io.test_status(self.name(), self.status_code, self.status)
+        return internal_io.test_status(self.name(), self.status_code, self.status, self.failure_dict, self.data)
 
     @staticmethod
     def get_status_from_code(code):
@@ -109,6 +111,16 @@ class TestTemplate:
         self.queue_lock.release()
         return self.get_status_code()
 
+    def add_failure(self, path, message):
+        """
+        Adds a failure to the failure dictionary.
+        :param path: Path to the file that failed
+        :type path: str
+        :param message: Message to add
+        :type message: str
+        """
+        self.failure_dict[path] = message
+
     def __del__(self):
         """
         Destructor.
@@ -135,16 +147,25 @@ class TestWalkTemplate(TestTemplate):
 
     def run_test(self):
         self.set_status("running", "The test will begin shortly, please wait...")
+
         if self.test_data is None and not self.args.continue_on_error:
             self.set_status("problem", "No test data given.")
             return self.finish()
 
         self.set_status("running", "The test will begin shortly, please wait...")
         for path in self.walk():
-            self.compare(path, "test", lambda x: True, [], {})
-        self.set_status("success", "The test was a success but kinda not a success.")
-        self.finish()
-        return
+            if not self.compare(path, "test", lambda x: True, [], {}):
+                self.add_failure(path, f"Test {self.name()} failed on {path}")
+                if not self.args.continue_on_error:
+                    self.set_status("failure", f"Test {self.name()} failed on {path}")
+                    return self.finish()
+
+        if len(self.failure_dict) > 0:
+            self.set_status("failure", f"Test {self.name()} failed on {len(self.failure_dict)} files.")
+        else:
+            self.set_status("success", f"Test {self.name()} passed.")
+
+        return self.finish()
 
     def walk(self):
         """
@@ -186,3 +207,5 @@ class TestWalkTemplate(TestTemplate):
             if not self.args.continue_on_error:
                 self.set_status("error", "Error: " + str(e))
                 raise e
+        finally:
+            return False

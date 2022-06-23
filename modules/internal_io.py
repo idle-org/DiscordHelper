@@ -10,7 +10,7 @@ global_status = namedtuple(
     'tests_total, tests_finished, test_success, tests_failed, tests_running, tests_skipped, tests_error',
     defaults=(0, 0, 0, 0, 0, 0, 0)
 )
-test_status = namedtuple('test_status', 'name, status, message', defaults=(None, None, None))
+test_status = namedtuple('test_status', 'name, status, message, failure_dict, data', defaults=(None, None, None, {}, {}))
 return_code_dict = {
     "skipped": "The test was not run",
     "running": "The test is running",

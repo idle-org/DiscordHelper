@@ -191,6 +191,18 @@ class TestRunner:
             tests_error=nb_tests_failure
         )
 
+    def get_test_data(self):
+        """
+        Gets the test data
+        :return: The test data
+        :rtype: dict
+        """
+        data = {}
+        queue_lock.acquire()
+        for test in self.finished_tests:
+            data[test.name] = test.data
+        queue_lock.release()
+        return data
 
 def run_check(args, agnpath):
     """
@@ -206,5 +218,10 @@ def run_check(args, agnpath):
         print(tr.get_status())  # TODO : Print status in a more readable way
         time.sleep(0.5)
     print("The test sequence is now finished")
+
     print(tr.get_status())  # TODO: Print the final status, test still running are actually skipped
+    if args.gen_data:
+        print("Generating data...")
+        # print(tr.get_test_data())  # TODO: Transorm the data into a yaml or json file
+    time.sleep(2)
     sys.exit(tr.get_exit_code())
