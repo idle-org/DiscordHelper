@@ -52,7 +52,7 @@ class SpideyTest(test_template.TestTemplate):
         if lines > 1:
             self.is_infected = True
 
-        if self.is_infected:
+        if self.is_infected:  # TODO: set a status here, explaining and why the test failed, the scary part will be handled by the main program
             print("\n!!! WARNING !!!\n"
                   "Unless you've installed a plugin you really trust, chances are your discord install "
                   "is corrupted. We suggest uninstalling discord and deleting all its files before reinstalling.\n"

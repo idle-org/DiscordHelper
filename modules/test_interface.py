@@ -122,7 +122,7 @@ class TestRunner:
         if self.args.launch:
             while True:
                 if POST_RUN_ALLOWED:
-                    print("Running post test runner")
+                    print("Running post test runner...")
                     return 0
                 time.sleep(0.5)
         return 0
@@ -199,5 +199,6 @@ def run_check(args, agnpath):
     while tr.get_exit_code() == -1:
         print(tr.get_status())
         time.sleep(0.5)
-
+    print("The test sequence is now finished")
+    print(tr.get_status())
     sys.exit(tr.get_exit_code())
