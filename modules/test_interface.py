@@ -2,9 +2,8 @@ import sys
 import importlib
 import threading
 import time
-import queue
 from collections import deque
-from modules.internal_io import global_status, test_status, return_code_dict
+from modules.internal_io import global_status  # , test_status, return_code_dict
 
 """
 All modules that can be tested
@@ -183,12 +182,13 @@ class TestRunner:
         nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped
         nb_test_running = nb_tests - nb_tests_ran
         return global_status(
-            total_tests=nb_test_running,
-            test_success=nb_tests_success,
+            tests_total=nb_tests,
             tests_finished=nb_tests_ran,
+            test_success=nb_tests_success,
             tests_failed=nb_tests_failure,
             tests_running=nb_test_running,
             tests_skipped=nb_tests_skipped,
+            tests_error=nb_tests_failure
         )
 
 
@@ -203,8 +203,8 @@ def run_check(args, agnpath):
 
     print("Waiting for the end of the tests")
     while tr.get_exit_code() == -1:
-        print(tr.get_status())
+        print(tr.get_status())  # TODO : Print status in a more readable way
         time.sleep(0.5)
     print("The test sequence is now finished")
-    print(tr.get_status())
+    print(tr.get_status())  # TODO: Print the final status, test still running are actually skipped
     sys.exit(tr.get_exit_code())

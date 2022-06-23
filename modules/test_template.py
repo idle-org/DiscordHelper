@@ -4,11 +4,13 @@ A global template for all tests.
 
 from modules import internal_io
 
+
 class TestDataError(Exception):
     """
     Raised when the data is not valid.
     """
     pass
+
 
 class TestTemplate:
     def __init__(self, args, agnpath, test_data, queue, queue_lock):
@@ -25,6 +27,7 @@ class TestTemplate:
         :param queue_lock: The lock to use when putting the test status in the queue
         :type queue_lock: threading.Lock
         """
+        self.args = args
         self.ptb = args.ptb
         self.agnostic_path = agnpath
         self.os_name = agnpath.os
@@ -106,6 +109,13 @@ class TestTemplate:
         self.queue_lock.release()
         return self.get_status_code()
 
+    def __del__(self):
+        """
+        Destructor.
+        """
+        if self.status_code == "running":
+            return self.finish("skipped")
+
 
 class TestWalkTemplate(TestTemplate):
     def __init__(self, args, agnpath, test_data, queue, queue_lock):
@@ -124,16 +134,17 @@ class TestWalkTemplate(TestTemplate):
             self.set_status("problem", "No test data given.")
 
     def run_test(self):
-
-        self.finish()
-        return
-        if self.test_data is None:
+        self.set_status("running", "The test will begin shortly, please wait...")
+        if self.test_data is None and not self.args.continue_on_error:
             self.set_status("problem", "No test data given.")
-            return self.get_status()
+            return self.finish()
+
         self.set_status("running", "The test will begin shortly, please wait...")
         for path in self.walk():
             self.compare(path, "test", lambda x: True, [], {})
-        self.set_status("sucess", "The test was a success but kinda not a success.")
+        self.set_status("success", "The test was a success but kinda not a success.")
+        self.finish()
+        return
 
     def walk(self):
         """
@@ -160,6 +171,8 @@ class TestWalkTemplate(TestTemplate):
 
         try:
             self.data[path] = function(path, *args, **kwargs)
+            if not self.test_data:
+                raise TestDataError("No test data given.")
             if path not in self.test_data["files"]:
                 raise TestDataError("No entry in test data for path: " + str(path))
             if entry_name not in self.test_data["files"][path]:

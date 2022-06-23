@@ -26,7 +26,7 @@ class SpideyTest(test_template.TestTemplate):
         :return: Whether any of the index.js is more than one line
         :rtype: bool
         """
-
+        self.set_status("running")
         self.slowdown()  # This function is only used for testing
         paths = self.get_path()
         self.is_infected = False
@@ -50,9 +50,9 @@ class SpideyTest(test_template.TestTemplate):
                   "is corrupted. We suggest uninstalling discord and deleting all its files before reinstalling.\n"
                   "If you've recently downloaded a .exe directly sent from someone, "
                   "do also consider a clean windows reinstall.")
-        print("Spidey test finished")
+        print("Spidey test finished") # TODO : set a status here, explaining and why the test finished
 
-        self.finish("success")
+        return self.finish("success")
 
     def get_path(self):
         """
