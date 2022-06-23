@@ -1,9 +1,10 @@
 import asyncio
 import os
+from modules import test_template
 
 
-class SpideyTest:
-    def __init__(self, args, agnpath, test_data):
+class SpideyTest(test_template.TestTemplate):
+    def __init__(self, args, agnpath, test_data, queue):
         """
         Simple test runner, for testing the detection of Spidey viruses.
         :param args: List of arguments
@@ -12,13 +13,10 @@ class SpideyTest:
         :type agnpath: agnostic_path.AgnosticPath
         :param test_data: The data to be tested
         :type test_data: str
+        :param queue: The queue to put the status in
+        :type queue: queue.Queue
         """
-        self.ptb = args.ptb
-        self.agnostic_path = agnpath
-        self.os_name = agnpath.os
-        self.main_path = agnpath.main_path
-        self.test_data = test_data
-        self.alive = True
+        super().__init__(args, agnpath, test_data, queue)
 
     def run_test(self):
         """
@@ -52,7 +50,12 @@ class SpideyTest:
                   "is corrupted. We suggest uninstalling discord and deleting all its files before reinstalling.\n"
                   "If you've recently downloaded a .exe directly sent from someone, "
                   "do also consider a clean windows reinstall.")
-        return self.is_infected
+        print("Spidey test finished")
+
+        self.set_status(0)
+        status = self.get_status()
+        self.queue.append(status)
+        return self.get_status_code()
 
     def get_path(self):
         """
@@ -63,33 +66,3 @@ class SpideyTest:
         discord_modules = self.agnostic_path("modules", "discord_modules-1", "discord_modules")
         discord_desktop_core = self.agnostic_path("modules", "discord_desktop_core-1", "discord_desktop_core")
         return discord_modules, discord_desktop_core
-
-    def get_status_code(self):
-        """
-        The status code of the test
-        :return: 0: The test was not run, 1: The test is running, 2: The test is a success, 3: Test has failed, 4: Test found problems
-        :rtype: int
-        """
-        # TODO: Add this to a global_dict
-        return 0
-
-    def get_status(self):
-        """
-        Return the status of the test, as a string, as the test is ran
-        :return: "Test is running", "Test was not run", "Test was run and nothing was detected", "Test was run and some problems were detected (list of problems)"
-        :rtype: (int, str)
-        """
-        # TODO: Make use of a global_dict
-        return self.get_status_code(), ""
-
-
-async def main(args, agnpath, test_data):
-    """
-    The main function of the test.
-    :return: The status of the test
-    :rtype: (int, str)
-    """
-    spidey_test = SpideyTest(args, agnpath, test_data)
-    await asyncio.sleep(5)
-    spidey_test.run_test()
-    return spidey_test.get_status()
