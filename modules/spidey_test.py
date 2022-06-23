@@ -4,19 +4,11 @@ from modules import test_template
 
 
 class SpideyTest(test_template.TestTemplate):
-    def __init__(self, args, agnpath, test_data, queue):
+    def __init__(self, args, agnpath, test_data, queue, queue_lock):
         """
         Simple test runner, for testing the detection of Spidey viruses.
-        :param args: List of arguments
-        :type args: argparse.Namespace
-        :param agnpath: The path to the discord folder
-        :type agnpath: agnostic_path.AgnosticPath
-        :param test_data: The data to be tested
-        :type test_data: str
-        :param queue: The queue to put the status in
-        :type queue: queue.Queue
         """
-        super().__init__(args, agnpath, test_data, queue)
+        super().__init__(args, agnpath, test_data, queue, queue_lock)
 
     def slowdown(self):
         """
@@ -60,10 +52,7 @@ class SpideyTest(test_template.TestTemplate):
                   "do also consider a clean windows reinstall.")
         print("Spidey test finished")
 
-        self.set_status("success")
-        status = self.get_status()
-        self.queue.append(status)
-        return self.get_status_code()
+        self.finish("success")
 
     def get_path(self):
         """

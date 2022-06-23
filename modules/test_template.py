@@ -4,9 +4,14 @@ A global template for all tests.
 
 from modules import internal_io
 
+class TestDataError(Exception):
+    """
+    Raised when the data is not valid.
+    """
+    pass
 
 class TestTemplate:
-    def __init__(self, args, agnpath, test_data, queue):
+    def __init__(self, args, agnpath, test_data, queue, queue_lock):
         """
         Simple test template.
         :param args: List of arguments
@@ -15,6 +20,10 @@ class TestTemplate:
         :type agnpath: agnostic_path.AgnosticPath
         :param test_data: The data to be tested
         :type test_data: str
+        :param queue: The queue to put the test status in
+        :type queue: queue.deque
+        :param queue_lock: The lock to use when putting the test status in the queue
+        :type queue_lock: threading.Lock
         """
         self.ptb = args.ptb
         self.agnostic_path = agnpath
@@ -26,6 +35,7 @@ class TestTemplate:
         self.status = "Test not yet initialized."
         self.queue = queue
         self.set_status("idle")
+        self.queue_lock = queue_lock
 
     def run_test(self):
         """
@@ -81,3 +91,85 @@ class TestTemplate:
         else:
             self.status = self.get_status_from_code(statuscode)
         return self.status_code
+
+    def finish(self, statuscode: str = None, message: str = None):
+        """
+        Finishes the test.
+        """
+        if message is not None:
+            self.status = message
+        if statuscode is not None:
+            self.status_code = statuscode
+
+        self.queue_lock.acquire()
+        self.queue.append(self.get_status())
+        self.queue_lock.release()
+        return self.get_status_code()
+
+
+class TestWalkTemplate(TestTemplate):
+    def __init__(self, args, agnpath, test_data, queue, queue_lock):
+        """
+        Simple test template.
+        :param args: List of arguments
+        :type args: argparse.Namespace
+        :param agnpath: The path to the discord folder
+        :type agnpath: agnostic_path.AgnosticPath
+        :param test_data: The data to be tested
+        :type test_data: str
+        """
+        super().__init__(args, agnpath, test_data, queue, queue_lock)
+        self.data = {}
+        if test_data is None:
+            self.set_status("problem", "No test data given.")
+
+    def run_test(self):
+
+        self.finish()
+        return
+        if self.test_data is None:
+            self.set_status("problem", "No test data given.")
+            return self.get_status()
+        self.set_status("running", "The test will begin shortly, please wait...")
+        for path in self.walk():
+            self.compare(path, "test", lambda x: True, [], {})
+        self.set_status("sucess", "The test was a success but kinda not a success.")
+
+    def walk(self):
+        """
+        Walks the given path and returns a list of all files and directories.
+        :return: List of all files and directories
+        :return:
+        """
+        return self.agnostic_path.walk_all_files(self.agnostic_path())
+
+    def compare(self, path, entry_name, function, args, kwargs):
+        """
+        Use the function on the given path, with given arguments and compare it with the entry in the test data.
+        :param path: Path to the file or directory
+        :type path: agnostic_path.AgnosticPath
+        :param entry_name: Name of the entry in the test data
+        :type entry_name: str
+        :param function: Function to use on the path
+        :type function: function
+        :param args: Arguments to use on the function
+        :type args: list
+        :param kwargs: Keyword arguments to use on the function
+        :type kwargs: dict
+        """
+
+        try:
+            self.data[path] = function(path, *args, **kwargs)
+            if path not in self.test_data["files"]:
+                raise TestDataError("No entry in test data for path: " + str(path))
+            if entry_name not in self.test_data["files"][path]:
+                raise TestDataError("No entry in test data for path: " + str(path) + " and entry name: " + str(entry_name))
+            data_origin = self.test_data["files"][path][entry_name]
+            self.data[path] = function(path, *args, **kwargs)
+            if data_origin != self.data[path]:
+                return False
+            return True
+        except TestDataError as e:
+            if not self.args.continue_on_error:
+                self.set_status("error", "Error: " + str(e))
+                raise e
