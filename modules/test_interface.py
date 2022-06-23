@@ -122,7 +122,7 @@ class TestRunner:
         if self.args.launch:
             while True:
                 if POST_RUN_ALLOWED:
-                    print("Running post test runner")
+                    print("Running post test runner...")
                     return 0
                 time.sleep(0.5)
         return 0
@@ -167,17 +167,18 @@ class TestRunner:
         nb_tests_skipped = 0
         for test in self.finished_tests:
             print(f"Test {test.name} finished with status {test.status}")
-            if test.status == 0:
+            if test.status == "success":
                 nb_tests_success += 1
-            elif test.status == 1:
+            elif test.status == "failure":
                 nb_tests_failure += 1
-            elif test.status == 2:
+            elif test.status == "skipped":
                 nb_tests_skipped += 1
 
         nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped
         nb_test_running = nb_tests - nb_tests_ran
         return global_status(
             total_tests=nb_test_running,
+            test_success=nb_tests_success,
             tests_finished=nb_tests_ran,
             tests_failed=nb_tests_failure,
             tests_running=nb_test_running,
@@ -198,5 +199,6 @@ def run_check(args, agnpath):
     while tr.get_exit_code() == -1:
         print(tr.get_status())
         time.sleep(0.5)
-
+    print("The test sequence is now finished")
+    print(tr.get_status())
     sys.exit(tr.get_exit_code())
