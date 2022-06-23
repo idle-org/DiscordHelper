@@ -16,6 +16,7 @@ _TEST_MODULES = {
     "test_walk": ["test_template", "TestWalkTemplate"],
 }
 POST_RUN_ALLOWED = False
+queue_lock = threading.Lock()
 
 
 class TestRunner:
@@ -79,7 +80,7 @@ class TestRunner:
         for module_name, test_class in self.loaded_test_classes.items():
             for i in range(10):
                 print(f"Starting test {module_name}")
-                tc = test_class(self.args, self.agnostic_path, None, self.finished_tests)
+                tc = test_class(self.args, self.agnostic_path, None, self.finished_tests, queue_lock)
                 tc = threading.Thread(target=tc.run_test, args=())
                 tc.name = str(module_name)
                 tc.daemon = True
@@ -163,6 +164,7 @@ class TestRunner:
         :return: The status
         :rtype: str
         """
+        queue_lock.acquire()
         nb_tests = len(self.list_of_tests)
         nb_tests_success = 0
         nb_tests_failure = 0
@@ -177,7 +179,7 @@ class TestRunner:
                 nb_tests_skipped += 1
             elif test.status == "problem":
                 nb_tests_failure += 1
-
+        queue_lock.release()
         nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped
         nb_test_running = nb_tests - nb_tests_ran
         return global_status(
