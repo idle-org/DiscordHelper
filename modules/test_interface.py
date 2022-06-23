@@ -13,6 +13,7 @@ argparse argument : [module_name, class_name]
 """
 _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
+    "test_walk": ["test_template", "TestWalkTemplate"],
 }
 POST_RUN_ALLOWED = False
 
@@ -61,8 +62,9 @@ class TestRunner:
                     modules[values[0]] = importlib.import_module(f"modules.{values[0]}")
                     classes[values[0]] = getattr(modules[values[0]], values[1])
 
-        except AttributeError:
+        except AttributeError as e:
             print(f"The module {module_name} was not loaded because it was not specified in the config.")
+            print(e)
 
         self.loaded_test_modules.update(modules)
         self.loaded_test_classes.update(classes)
@@ -173,6 +175,8 @@ class TestRunner:
                 nb_tests_failure += 1
             elif test.status == "skipped":
                 nb_tests_skipped += 1
+            elif test.status == "problem":
+                nb_tests_failure += 1
 
         nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped
         nb_test_running = nb_tests - nb_tests_ran

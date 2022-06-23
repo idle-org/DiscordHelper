@@ -30,5 +30,6 @@ def parse(_args):
     parser.add_argument("--gen-data-path", "--generate-data-path", "--gen-path", nargs=1, default="", help="Path to generate the data in")
     parser.add_argument("--database", "--db", nargs=1, default="", help="Alternative database for the analysis")
     parser.add_argument("--continue", action="store_true", help="Continue the analysis in case of failure")
+    parser.add_argument("--test-walk", action="store_true", help="Test walk function")
 
     return parser.parse_args(_args)

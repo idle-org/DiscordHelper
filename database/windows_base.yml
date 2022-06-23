@@ -1,0 +1,19 @@
+global:
+  name: Windows Base
+  version: 1.0
+
+
+files:
+  /etc/passwd:
+    sha256: "6c3d65f8b8b8f5a8f62b60c0e15d5d084d3b20f470f5d8b3d26bfb3c350d37a3"
+    type: file
+    size: "1024"
+    permissions: "0644"
+    owner: "root"
+    group: "root"
+    date: "2018-01-01T00:00:00Z"
+    executable: "true"
+    symlink: "false"
+    md5: "6c3d65f8b8b8f5a8f62b60c0e15d5d084d3b20f470f5d8b3d26bfb3c350d37a3"
+    sha1: "6c3d65f8b8b8f5a8f62b60c0e15d5d084d3b20f470f5d8b3d26bfb3c350d37a3"
+

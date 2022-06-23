@@ -81,3 +81,59 @@ class TestTemplate:
         else:
             self.status = self.get_status_from_code(statuscode)
         return self.status_code
+
+
+class TestWalkTemplate(TestTemplate):
+    def __init__(self, args, agnpath, test_data, queue):
+        """
+        Simple test template.
+        :param args: List of arguments
+        :type args: argparse.Namespace
+        :param agnpath: The path to the discord folder
+        :type agnpath: agnostic_path.AgnosticPath
+        :param test_data: The data to be tested
+        :type test_data: str
+        """
+        super().__init__(args, agnpath, test_data, queue)
+        if test_data is None:
+            self.set_status("problem", "No test data given.")
+
+    def run_test(self):
+        if self.test_data is None:
+            self.set_status("problem", "No test data given.")
+            return self.get_status()
+        self.set_status("running", "The test will begin shortly, please wait...")
+        for path in self.walk():
+            self.compare(path, "test", lambda x: True, [], {})
+
+    def walk(self):
+        """
+        Walks the given path and returns a list of all files and directories.
+        :return: List of all files and directories
+        :return:
+        """
+        return self.agnostic_path.walk_all_files(self.agnostic_path())
+
+    def compare(self, path, entry_name, function, args, kwargs):
+        """
+        Use the function on the given path, with given arguments and compare it with the entry in the test data.
+        :param path: Path to the file or directory
+        :type path: agnostic_path.AgnosticPath
+        :param entry_name: Name of the entry in the test data
+        :type entry_name: str
+        :param function: Function to use on the path
+        :type function: function
+        :param args: Arguments to use on the function
+        :type args: list
+        :param kwargs: Keyword arguments to use on the function
+        :type kwargs: dict
+        """
+        if path not in self.test_data["files"]:
+            raise ValueError("No entry in test data for path: " + str(path))
+        if entry_name not in self.test_data["files"][path]:
+            raise ValueError("No entry in test data for path: " + str(path) + " and entry name: " + str(entry_name))
+        data_origin = self.test_data["files"][path][entry_name]
+        data_result = function(path, *args, **kwargs)
+        if data_origin != data_result:
+            return False
+        return True

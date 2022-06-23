@@ -7,8 +7,8 @@ from collections import namedtuple
 
 global_status = namedtuple(
     'global_status',
-    'total_tests, tests_finished, test_success, tests_failed, tests_running, tests_skipped',
-    defaults=(0, 0, 0, 0, 0, 0)
+    'total_tests, tests_finished, test_success, tests_failed, tests_running, tests_skipped, test_error',
+    defaults=(0, 0, 0, 0, 0, 0, 0)
 )
 test_status = namedtuple('test_status', 'name, status, message', defaults=(None, None, None))
 return_code_dict = {

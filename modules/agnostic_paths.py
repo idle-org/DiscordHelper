@@ -144,6 +144,17 @@ class AgnosticPaths:
         :rtype: str
         """
         return self.main_path
+
+    def walk_all_files(self, *args):
+        """
+        Walks all files in the given path
+        :param args: The path
+        :return: A list of all files in the given path
+        :rtype: list[str]
+        """
+        return [os.path.join(dirpath, filename)
+                for dirpath, dirnames, filenames in os.walk(self(*args))
+                for filename in filenames]
     
     def __repr__(self):
         """
