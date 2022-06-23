@@ -18,6 +18,15 @@ class SpideyTest(test_template.TestTemplate):
         """
         super().__init__(args, agnpath, test_data, queue)
 
+    def slowdown(self):
+        """
+        This function is only used for testing.
+        :return:
+        """
+        print("Spidey test is running slowly...")
+        import random, time
+        time.sleep(random.randint(1, 5))
+
     def run_test(self):
         """
         Counts the number of lines in both index.js files. If it's more than one, it's almost certain your discord
@@ -25,22 +34,21 @@ class SpideyTest(test_template.TestTemplate):
         :return: Whether any of the index.js is more than one line
         :rtype: bool
         """
-        import random, time
-        # Wait a random amount of time to make sure the files are loaded
-        time.sleep(random.randint(1, 5))
+
+        self.slowdown()  # This function is only used for testing
         paths = self.get_path()
         self.is_infected = False
         lines = 0
         with open(os.path.join(paths[0], "index.js")) as f:
             for line in f:
-                lines += 1
+                lines += 1  # TODO: you don't actually need to count the lines, you can just check if it's more than 1
         if lines > 1:
             self.is_infected = True
 
         lines = 0
         with open(os.path.join(paths[1], "index.js")) as f:
             for line in f:
-                lines += 1
+                lines += 1  # TODO: you don't actually need to count the lines, you can just check if it's more than 1
         if lines > 1:
             self.is_infected = True
 
@@ -52,7 +60,7 @@ class SpideyTest(test_template.TestTemplate):
                   "do also consider a clean windows reinstall.")
         print("Spidey test finished")
 
-        self.set_status(0)
+        self.set_status("success")
         status = self.get_status()
         self.queue.append(status)
         return self.get_status_code()
