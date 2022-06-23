@@ -204,6 +204,7 @@ class TestRunner:
         queue_lock.release()
         return data
 
+
 def run_check(args, agnpath):
     """
     Runs all operations selected in the config
