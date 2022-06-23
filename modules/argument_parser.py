@@ -1,13 +1,7 @@
-#!/usr/bin/python3
-
-""" Main program """
-
-from modules import test_interface, agnostic_paths
 import argparse
-import sys
 
 
-def parse(_args): # TODO: Move this to a arg_parsing module
+def parse(_args):
     parser = argparse.ArgumentParser(
         prog="Spidey Detector",
         description='Checks for corrupt discord install'
@@ -28,26 +22,13 @@ def parse(_args): # TODO: Move this to a arg_parsing module
     parser.add_argument('--analyze', action='store_true', help="Analyze the files in the discord folder for known js obfuscators")
     parser.add_argument('--all', action='store_true', help="Run all tests in parallel, and wait for a potential interupt")
     parser.add_argument('--launch', action='store_true', help="Launch the discord client after the tests are done")
-    parser.add_argument("--force-path", nargs=1, default="", help="Bypass the automatic path discovery with given path")
+    parser.add_argument("--force-path", nargs=1, default=None, help="Bypass the automatic path discovery with given path")
     parser.add_argument("--only-known-paths", "--fast", action='store_true', help="Only run the check on the known paths")
     parser.add_argument("--no-eval", action="store_true", help="Check for the eval function wich is a HUGE red flag")
     parser.add_argument("--const-abuse", "--no-const", action="store_true", help="Check for the abuse of the const: keyword, wich is massively used for obfucation")
+    parser.add_argument("--gen-data", "--generate-data", "--gen", action="store_true", help="Generate data for the analysis")
+    parser.add_argument("--gen-data-path", "--generate-data-path", "--gen-path", nargs=1, default="", help="Path to generate the data in")
+    parser.add_argument("--database", "--db", nargs=1, default="", help="Alternative database for the analysis")
+    parser.add_argument("--continue", action="store_true", help="Continue the analysis in case of failure")
+
     return parser.parse_args(_args)
-
-
-if __name__ == "__main__":
-    args = parse(sys.argv[1:])
-    agnostic_path = agnostic_paths.AgnosticPaths(ptb=args.ptb, force_path=args.force_path)
-    try:
-        spd = test_interface.run_check(args, agnostic_path)
-
-    except FileNotFoundError as er:
-        print(er)
-        sys.exit(1)
-    except OSError as er:
-        print(er.strerror)
-        sys.exit(1)
-
-    if spd == 0:
-        print("TestRunner could not find anything wrong with your discord install!") # TODO: Everything should be in the run_all_tests()
-    sys.exit(spd)

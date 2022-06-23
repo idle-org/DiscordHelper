@@ -1,5 +1,12 @@
+"""
+A global template for all tests.
+"""
+
+from modules import internal_io
+
+
 class TestTemplate:
-    def __init__(self, args, agnpath, test_data):
+    def __init__(self, args, agnpath, test_data, queue):
         """
         Simple test template.
         :param args: List of arguments
@@ -17,13 +24,14 @@ class TestTemplate:
         self.is_infected = False
         self.status_code = 0
         self.status = "Test not yet initialized."
-        self.return_code_dict = {
-            0: "The test was not run",
-            1: "The test is running",
-            2: "The test is a success",
-            3: "Test has failed",
-            4: "Test found problems",
-        }
+        self.queue = queue
+
+    def name(self):
+        """
+        :return: Name of the test
+        :rtype: str
+        """
+        return str(self.__class__.__name__)
 
     def get_status_code(self):
         """
@@ -37,15 +45,15 @@ class TestTemplate:
         :return: Status at the time of call.
         :rtype: str
         """
-        return self.status
+        return internal_io.test_status(self.name(), self.status_code, self.status)
 
-    @static
+    @staticmethod
     def get_status_from_code(code):
         """
         :return: Description of the status code
         :rtype: str
         """
-        return self.return_code_dict[code]
+        return internal_io.return_code_dict[code]
 
     def set_status(self, statuscode: int):
         """
