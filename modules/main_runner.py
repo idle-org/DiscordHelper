@@ -12,6 +12,9 @@ All modules that can be tested
 Associate the arguments passed to the command line with the modules to be loaded
 argparse argument : [module_name, class_name]
 """
+from termcolor import colored, cprint
+os.system('color')
+
 _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
     #"test_walk": ["test_template", "TestWalkTemplate"],
@@ -22,27 +25,23 @@ POST_RUN_ALLOWED = False
 
 queue_lock = threading.Lock()
 
-CLEAR_CODE = r"""
+CLEAR_CODE = colored(r"""
  _______ _                    
 (_______) |                   
  _      | | _____ _____  ____ 
 | |     | || ___ (____ |/ ___)
 | |_____| || ____/ ___ | |    
  \______)\_)_____)_____|_|
- """
+ """, 'green')
 
-INFECTED_CODE = r"""
+INFECTED_CODE = colored(r"""
  _         ___                             _ 
 | |       / __)              _            | |
 | |____ _| |__ _____  ____ _| |_ _____  __| |
 | |  _ (_   __) ___ |/ ___|_   _) ___ |/ _  |
 | | | | || |  | ____( (___  | |_| ____( (_| |
 |_|_| |_||_|  |_____)\____)  \__)_____)\____|
-"""
-
-if os.name == "nt":
-    CLEAR_CODE = r"[32m" + CLEAR_CODE + r"[0m"
-    INFECTED_CODE = r"[91m" + INFECTED_CODE + r"[0m"
+""", 'red')
 
 
 class TestRunner:

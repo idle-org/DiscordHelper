@@ -175,13 +175,3 @@ class AgnosticPaths:
         :rtype: str
         """
         return self.main_path
-
-
-if __name__ == '__main__':
-    path = AgnosticPaths("")
-    print(path)
-    print(path.version)
-    print(path.list())
-    print(path())
-    print(path("resources", "bootstrap"))  # Return the main_path plus resources, bootstrap
-    print(path.list_dir_files("resources", "bootstrap"))  # List the base_path/resources/bootstrap and return [[folders], [files]]
