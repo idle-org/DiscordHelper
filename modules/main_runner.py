@@ -1,3 +1,5 @@
+import json
+import os
 import sys
 import importlib
 import threading
@@ -14,7 +16,10 @@ _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
     "test_walk": ["test_template", "TestWalkTemplate"],
 }
+
+PROGRAM_VERSION = "1.0.0"
 POST_RUN_ALLOWED = False
+
 queue_lock = threading.Lock()
 
 
@@ -58,7 +63,7 @@ class TestRunner:
         module_name = None
         try:
             for module_name, values in _TEST_MODULES.items():
-                if self.args.__getattribute__(module_name):
+                if self.args.all or self.args.__getattribute__(module_name):
                     modules[values[0]] = importlib.import_module(f"modules.{values[0]}")
                     classes[values[0]] = getattr(modules[values[0]], values[1])
 
@@ -200,9 +205,34 @@ class TestRunner:
         data = {}
         queue_lock.acquire()
         for test in self.finished_tests:
-            data[test.name] = test.data
+            for key, value in test.data.items():
+                if key not in data:
+                    data[key] = value
+                else:
+                    data[key].update(value)
+            # data.update(test.data)
         queue_lock.release()
         return data
+
+def export_data(test_runner, data):
+    """
+    Exports the test data
+    :param test_runner: The test runner
+    :type test_runner: TestRunner
+    :param data: The test data
+    :type data: dict
+    """
+    main_data = {
+        "global":
+            {
+                "os": test_runner.os_name,
+                "ptb": test_runner.ptb,
+                "discord_version": test_runner.version,
+                "program_version": PROGRAM_VERSION,
+            },
+        "tests": data,
+    }
+    return main_data
 
 
 def run_check(args, agnpath):
@@ -223,6 +253,12 @@ def run_check(args, agnpath):
     print(tr.get_status())  # TODO: Print the final status, test still running are actually skipped
     if args.gen_data:
         print("Generating data...")
+        data = tr.get_test_data()
+        print("Exporting data...")
+        main_data = export_data(tr, data)
+        # print(main_data)
+        with open(os.path.join("databases", args.gen_data[0]), "w") as f:
+            json.dump(main_data, f, indent=4)
         # print(tr.get_test_data())  # TODO: Transorm the data into a yaml or json file
     time.sleep(2)
     sys.exit(tr.get_exit_code())
