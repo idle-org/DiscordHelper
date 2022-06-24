@@ -14,7 +14,7 @@ if __name__ == "__main__":
         argv = sys.argv[1:]
         if len(argv) == 0:
             user_path = os.path.join(os.path.expanduser("~"), "Documents", "DiscordHelper")
-            argv = f"--all --launch --continue --timeout 12 --gen-data {user_path}/new_test_data_{int(time.time())}.yaml".split(" ")
+            argv = f"--all --autodetect --launch --continue --timeout 10 --gen-data {user_path}/new_test_data_{int(time.time())}.yaml".split(" ")
 
         args = discordHelper.argument_parser.parse(argv)
 

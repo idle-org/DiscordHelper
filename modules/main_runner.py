@@ -288,12 +288,12 @@ def run_check(args, agnpath):
         if not os.path.exists(folder):
             print("Making folder...")
             os.makedirs(args.gen_data)
-        print("Exporting data...")  # TODO : Advertize where the data is exported
+        print(f"Exporting the test data to {file_path}")  # TODO : Advertize where the data is exported
         main_data = export_data(tr, data)
         # print(main_data)
         with open(file_path, "w") as f:
             json.dump(main_data, f, indent=4)
 
-    print(f"Exiting in {args.timeout} seconds...")
+    print(f"The program executed succesfully, exiting in {args.timeout} seconds...")
     time.sleep(args.timeout)
     sys.exit(tr.get_exit_code())

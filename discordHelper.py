@@ -12,7 +12,7 @@ def main(argm):
     :param argm: List of arguments
     :type argm: argparse.Namespace
     """
-    agnostic_path = agnostic_paths.AgnosticPaths(argm.ptb, argm.force_path)
+    agnostic_path = agnostic_paths.AgnosticPaths(argm)
     test_runner = main_runner.run_check(argm, agnostic_path)
 
 
