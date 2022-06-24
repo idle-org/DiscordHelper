@@ -8,6 +8,7 @@ def parse(_args):
     )
 
     parser.add_argument('--ptb', action='store_const', const="PTB", default="", help='Force use of Public Test Version')
+    parser.add_argument('--autodetect', action='store_true', help='Try to autodetect the discord folder, will override --ptb')
 
     # General arguments
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')

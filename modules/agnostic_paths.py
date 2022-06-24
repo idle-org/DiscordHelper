@@ -11,17 +11,16 @@ class AgnosticPaths:
     An agnostic path object, containing all methods to access the files and folders in a standard discord install
     """
     
-    def __init__(self, ptb, force_path=None):
+    def __init__(self, args):
         """
-        :param ptb: Whether the discord is a public beta install (ptb="PTB") or not (ptb="")
-        :type ptb: str
-        :param force_path: An alternative discord install path, usefull to test the script on a non standard install
-        :type force_path: str
+        :param args: The arguments passed to the script
+        :type args: argparse.Namespace
         """
-        self.ptb = ptb
+        self.args = args
+        self.ptb = args.ptb
         self.os = self.get_os()
-        if force_path is not None:
-            self.force_path = force_path[0]
+        if args.force_path is not None:
+            self.force_path = args.force_path[0]
         else:
             self.force_path = None
         self.main_path = self._get_path()
@@ -59,11 +58,17 @@ class AgnosticPaths:
             return self.force_path
         if self.os == 'windows':
             base_path = os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord")
+            ptb_path = base_path+"PTB"
+            if self.args.autodetect:
+                if os.path.exists(ptb_path):
+                    self.ptb = "PTB"
+                    self.args.ptb = "PTB"
+                    return ptb_path
+                else:
+                    return base_path
             if self.ptb == 'PTB':
                 return base_path+"PTB"
             else:
-                if os.path.exists(base_path):
-                    return base_path
                 return base_path+"PTB"  # Try to find the PTB version
         elif self.os == 'linux':
             return os.path.join("/", "opt", "discord")
@@ -175,13 +180,3 @@ class AgnosticPaths:
         :rtype: str
         """
         return self.main_path
-
-
-if __name__ == '__main__':
-    path = AgnosticPaths("")
-    print(path)
-    print(path.version)
-    print(path.list())
-    print(path())
-    print(path("resources", "bootstrap"))  # Return the main_path plus resources, bootstrap
-    print(path.list_dir_files("resources", "bootstrap"))  # List the base_path/resources/bootstrap and return [[folders], [files]]

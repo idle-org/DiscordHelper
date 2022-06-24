@@ -41,6 +41,7 @@ class TestTemplate:
         self.queue_lock = queue_lock
         self.failure_dict = {}
         self.new_data = {}
+        self.progress = 0
 
     def run_test(self):
         """
@@ -69,7 +70,14 @@ class TestTemplate:
         :return: Status at the time of call.
         :rtype: internal_io.test_status
         """
-        return internal_io.test_status(self.name(), self.status_code, self.status, self.failure_dict, self.new_data)
+        return internal_io.test_status(
+            self.name(),
+            self.status_code,
+            self.status,
+            self.failure_dict,
+            self.new_data,
+            self.progress
+        )
 
     @staticmethod
     def get_status_from_code(code):
@@ -107,6 +115,7 @@ class TestTemplate:
             self.status_code = statuscode
 
         self.queue_lock.acquire()
+        # self.progress = 1
         self.queue.append(self.get_status())
         self.queue_lock.release()
         return self.get_status_code()
