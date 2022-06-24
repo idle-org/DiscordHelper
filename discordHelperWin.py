@@ -14,6 +14,6 @@ from modules import spidey_test, test_template
 if __name__ == "__main__":
     argv = sys.argv[1:]
     if len(argv) == 0:
-        argv = f"--all --launch --continue --gen-data new{int(time.time())}.yaml".split(" ")
+        argv = f"--all --launch --continue --gen-data new_test_data_{int(time.time())}.yaml".split(" ")
     args = discordHelper.argument_parser.parse(argv)
     discordHelper.main(args)

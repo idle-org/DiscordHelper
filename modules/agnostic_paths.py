@@ -58,7 +58,13 @@ class AgnosticPaths:
         if self.force_path is not None:
             return self.force_path
         if self.os == 'windows':
-            return os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord{self.ptb}")
+            base_path = os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord")
+            if self.ptb == 'PTB':
+                return base_path+"PTB"
+            else:
+                if os.path.exists(base_path):
+                    return base_path
+                return base_path+"PTB"  # Try to find the PTB version
         elif self.os == 'linux':
             return os.path.join("/", "opt", "discord")
             # return os.path.join("usr","share","discord")

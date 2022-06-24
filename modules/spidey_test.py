@@ -10,15 +10,6 @@ class SpideyTest(test_template.TestTemplate):
         """
         super().__init__(args, agnpath, test_data, queue, queue_lock)
 
-    def slowdown(self):
-        """
-        This function is only used for testing.
-        :return:
-        """
-        print("Spidey test is running slowly...")
-        import random, time
-        time.sleep(random.randint(1, 5))
-
     def run_test(self):
         """
         Counts the number of lines in both index.js files. If it's more than one, it's almost certain your discord
@@ -27,7 +18,7 @@ class SpideyTest(test_template.TestTemplate):
         :rtype: bool
         """
         self.set_status("running")
-        self.slowdown()  # This function is only used for testing
+        # self.slowdown()  # This function is only used for testing
         paths = self.get_path()
         self.is_infected = False
         lines = 0

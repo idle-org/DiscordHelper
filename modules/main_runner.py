@@ -14,7 +14,7 @@ argparse argument : [module_name, class_name]
 """
 _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
-    "test_walk": ["test_template", "TestWalkTemplate"],
+    # "test_walk": ["test_template", "TestWalkTemplate"],
 }
 
 PROGRAM_VERSION = "1.0.0"
@@ -82,14 +82,13 @@ class TestRunner:
         """
         self.list_of_tests = []
         for module_name, test_class in self.loaded_test_classes.items():
-            for i in range(10):
-                print(f"Starting test {module_name}")
-                tc = test_class(self.args, self.agnostic_path, None, self.finished_tests, queue_lock)
-                tc = threading.Thread(target=tc.run_test, args=())
-                tc.name = str(module_name)
-                tc.daemon = True
-                self.list_of_tests.append(tc)
-                tc.start()
+            print(f"Starting test {module_name}")
+            tc = test_class(self.args, self.agnostic_path, None, self.finished_tests, queue_lock)
+            tc = threading.Thread(target=tc.run_test, args=())
+            tc.name = str(module_name)
+            tc.daemon = True
+            self.list_of_tests.append(tc)
+            tc.start()
 
         # Launch a controller to allow the user to stop all tests
         # controller = threading.Thread(target=self.test_launcher)
@@ -213,6 +212,7 @@ class TestRunner:
             # data.update(test.data)
         queue_lock.release()
         return data
+
 
 def export_data(test_runner, data):
     """
