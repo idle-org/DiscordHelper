@@ -40,7 +40,7 @@ class TestTemplate:
         self.set_status("idle")
         self.queue_lock = queue_lock
         self.failure_dict = {}
-        self.data = {}
+        self.new_data = {}
 
     def run_test(self):
         """
@@ -69,7 +69,7 @@ class TestTemplate:
         :return: Status at the time of call.
         :rtype: internal_io.test_status
         """
-        return internal_io.test_status(self.name(), self.status_code, self.status, self.failure_dict, self.data)
+        return internal_io.test_status(self.name(), self.status_code, self.status, self.failure_dict, self.new_data)
 
     @staticmethod
     def get_status_from_code(code):
@@ -141,11 +141,62 @@ class TestWalkTemplate(TestTemplate):
         :type test_data: str
         """
         super().__init__(args, agnpath, test_data, queue, queue_lock)
-        self.data = {}
         if test_data is None:
             self.set_status("problem", "No test data given.")
 
+    def add_test_result(self, path, testname, result):
+        """
+        Adds a test result to the data dictionary.
+        :param path: Path to the file that was tested
+        :type path: str
+        :param testname: Name of the test
+        :type testname: str
+        :param result: Result of the test
+        :type result: any
+        """
+
+        if path not in self.new_data:
+            self.new_data[path] = {}
+        self.new_data[path][testname] = result
+        return result
+
+    def get_test_data(self, path, testname):
+        """
+        Gets the test data from the data dictionary.
+        :param path: Path to the file that was tested
+        :type path: str
+        :param testname: Name of the test
+        :type testname: str
+        :return: Test data
+        :rtype: any
+        """
+        if path in self.new_data:
+            if testname in self.new_data[path]:
+                return self.new_data[path][testname]
+        return None
+
+    def get_expected_result(self, path, testname):
+        """
+        Gets the expected result from the data dictionary.
+        :param path: Path to the file that was tested
+        :type path: str
+        :param testname: Name of the test
+        :type testname: str
+        :return: Expected result
+        :rtype: any
+        """
+        if self.test_data:
+            if path in self.test_data:
+                if testname in self.test_data[path]:
+                    return self.test_data[path][testname]
+        return None
+
     def run_test(self):
+        """
+        The main runner function, must be implemented by the child class.
+        Here is an example of how to use the add_test_result function.
+        :return:
+        """
         self.set_status("running", "The test will begin shortly, please wait...")
 
         if self.test_data is None and not self.args.continue_on_error:
@@ -154,6 +205,7 @@ class TestWalkTemplate(TestTemplate):
 
         self.set_status("running", "The test will begin shortly, please wait...")
         for path in self.walk():
+            print(path)
             if not self.compare(path, "test", lambda x: True, [], {}):
                 self.add_failure(path, f"Test {self.name()} failed on {path}")
                 if not self.args.continue_on_error:
@@ -190,22 +242,13 @@ class TestWalkTemplate(TestTemplate):
         :type kwargs: dict
         """
 
-        try:
-            self.data[path] = function(path, *args, **kwargs)
-            if not self.test_data:
-                raise TestDataError("No test data given.")
-            if path not in self.test_data["files"]:
-                raise TestDataError("No entry in test data for path: " + str(path))
-            if entry_name not in self.test_data["files"][path]:
-                raise TestDataError("No entry in test data for path: " + str(path) + " and entry name: " + str(entry_name))
-            data_origin = self.test_data["files"][path][entry_name]
-            self.data[path] = function(path, *args, **kwargs)
-            if data_origin != self.data[path]:
-                return False
-            return True
-        except TestDataError as e:
-            if not self.args.continue_on_error:
-                self.set_status("error", "Error: " + str(e))
-                raise e
-        finally:
+        data_origin = self.add_test_result(path, entry_name, function(path, *args, **kwargs))
+        expected_data = self.get_expected_result(path, entry_name)
+        if expected_data is None and not self.args.continue_on_error:
+            self.set_status("problem", f"No expected data found for {path}")
             return False
+
+        if data_origin != expected_data:
+            return False
+        return True
+

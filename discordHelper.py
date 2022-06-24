@@ -2,7 +2,7 @@
 
 """ Main program """
 
-from modules import test_interface, agnostic_paths, argument_parser
+from modules import main_runner, agnostic_paths, argument_parser
 import sys
 
 
@@ -13,7 +13,7 @@ def main(argm):
     :type argm: argparse.Namespace
     """
     agnostic_path = agnostic_paths.AgnosticPaths(argm.ptb, argm.force_path)
-    test_runner = test_interface.run_check(argm, agnostic_path)
+    test_runner = main_runner.run_check(argm, agnostic_path)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,5 @@
+import json
+import os
 import sys
 import importlib
 import threading
@@ -12,10 +14,35 @@ argparse argument : [module_name, class_name]
 """
 _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
-    "test_walk": ["test_template", "TestWalkTemplate"],
+    #"test_walk": ["test_template", "TestWalkTemplate"],
 }
+
+PROGRAM_VERSION = "1.0.0"
 POST_RUN_ALLOWED = False
+
 queue_lock = threading.Lock()
+
+CLEAR_CODE = r"""
+ _______ _                    
+(_______) |                   
+ _      | | _____ _____  ____ 
+| |     | || ___ (____ |/ ___)
+| |_____| || ____/ ___ | |    
+ \______)\_)_____)_____|_|
+ """
+
+INFECTED_CODE = r"""
+ _         ___                             _ 
+| |       / __)              _            | |
+| |____ _| |__ _____  ____ _| |_ _____  __| |
+| |  _ (_   __) ___ |/ ___|_   _) ___ |/ _  |
+| | | | || |  | ____( (___  | |_| ____( (_| |
+|_|_| |_||_|  |_____)\____)  \__)_____)\____|
+"""
+
+if os.name == "nt":
+    CLEAR_CODE = r"[32m" + CLEAR_CODE + r"[0m"
+    INFECTED_CODE = r"[91m" + INFECTED_CODE + r"[0m"
 
 
 class TestRunner:
@@ -58,7 +85,7 @@ class TestRunner:
         module_name = None
         try:
             for module_name, values in _TEST_MODULES.items():
-                if self.args.__getattribute__(module_name):
+                if self.args.all or self.args.__getattribute__(module_name):
                     modules[values[0]] = importlib.import_module(f"modules.{values[0]}")
                     classes[values[0]] = getattr(modules[values[0]], values[1])
 
@@ -77,14 +104,13 @@ class TestRunner:
         """
         self.list_of_tests = []
         for module_name, test_class in self.loaded_test_classes.items():
-            for i in range(10):
-                print(f"Starting test {module_name}")
-                tc = test_class(self.args, self.agnostic_path, None, self.finished_tests, queue_lock)
-                tc = threading.Thread(target=tc.run_test, args=())
-                tc.name = str(module_name)
-                tc.daemon = True
-                self.list_of_tests.append(tc)
-                tc.start()
+            print(f"Starting test {module_name}")
+            tc = test_class(self.args, self.agnostic_path, None, self.finished_tests, queue_lock)
+            tc = threading.Thread(target=tc.run_test, args=())
+            tc.name = str(module_name)
+            tc.daemon = True
+            self.list_of_tests.append(tc)
+            tc.start()
 
         # Launch a controller to allow the user to stop all tests
         # controller = threading.Thread(target=self.test_launcher)
@@ -200,9 +226,35 @@ class TestRunner:
         data = {}
         queue_lock.acquire()
         for test in self.finished_tests:
-            data[test.name] = test.data
+            for key, value in test.data.items():
+                if key not in data:
+                    data[key] = value
+                else:
+                    data[key].update(value)
+            # data.update(test.data)
         queue_lock.release()
         return data
+
+
+def export_data(test_runner, data):
+    """
+    Exports the test data
+    :param test_runner: The test runner
+    :type test_runner: TestRunner
+    :param data: The test data
+    :type data: dict
+    """
+    main_data = {
+        "global":
+            {
+                "os": test_runner.os_name,
+                "ptb": test_runner.ptb,
+                "discord_version": test_runner.version,
+                "program_version": PROGRAM_VERSION,
+            },
+        "tests": data,
+    }
+    return main_data
 
 
 def run_check(args, agnpath):
@@ -220,9 +272,29 @@ def run_check(args, agnpath):
         time.sleep(0.5)
     print("The test sequence is now finished")
 
-    print(tr.get_status())  # TODO: Print the final status, test still running are actually skipped
+    status = tr.get_status()
+    print(status)  # TODO: Print the final status, test still running are actually skipped
+    if status.tests_failed > 0:
+        print(INFECTED_CODE)
+        tr.is_infected = True
+    else:
+        print(CLEAR_CODE)
+        tr.is_infected = False
+
     if args.gen_data:
         print("Generating data...")
-        # print(tr.get_test_data())  # TODO: Transorm the data into a yaml or json file
-    time.sleep(2)
+        data = tr.get_test_data()
+        file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
+        folder = os.path.dirname(file_path)
+        if not os.path.exists(folder):
+            print("Making folder...")
+            os.makedirs(args.gen_data)
+        print("Exporting data...")  # TODO : Advertize where the data is exported
+        main_data = export_data(tr, data)
+        # print(main_data)
+        with open(file_path, "w") as f:
+            json.dump(main_data, f, indent=4)
+
+    print(f"Exiting in {args.timeout} seconds...")
+    time.sleep(args.timeout)
     sys.exit(tr.get_exit_code())
