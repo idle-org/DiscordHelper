@@ -1,7 +1,7 @@
 """
 A windows executable for the discordHelper.py script.
 """
-
+import os
 import sys
 
 import discordHelper
@@ -14,6 +14,8 @@ from modules import spidey_test, test_template
 if __name__ == "__main__":
     argv = sys.argv[1:]
     if len(argv) == 0:
-        argv = f"--all --launch --continue --gen-data new_test_data_{int(time.time())}.yaml".split(" ")
+        user_path = os.path.join(os.path.expanduser("~"), "Documents", "DiscordHelper")
+        argv = f"--all --launch --continue --timeout 12 --gen-data {user_path}/new_test_data_{int(time.time())}.yaml".split(" ")
+
     args = discordHelper.argument_parser.parse(argv)
     discordHelper.main(args)

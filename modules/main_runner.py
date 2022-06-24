@@ -254,11 +254,18 @@ def run_check(args, agnpath):
     if args.gen_data:
         print("Generating data...")
         data = tr.get_test_data()
+        print("Making folder...")
+        file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
+        folder = os.path.dirname(file_path)
+        if not os.path.exists(folder):
+            os.makedirs(args.gen_data)
         print("Exporting data...")
         main_data = export_data(tr, data)
         # print(main_data)
-        with open(os.path.join("databases", args.gen_data[0]), "w") as f:
+        with open(file_path, "w") as f:
             json.dump(main_data, f, indent=4)
         # print(tr.get_test_data())  # TODO: Transorm the data into a yaml or json file
-    time.sleep(2)
+
+    print(f"Exiting in {args.timeout}...")
+    time.sleep(args.timeout)
     sys.exit(tr.get_exit_code())
