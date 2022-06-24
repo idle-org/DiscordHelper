@@ -14,13 +14,35 @@ argparse argument : [module_name, class_name]
 """
 _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
-    # "test_walk": ["test_template", "TestWalkTemplate"],
+    #"test_walk": ["test_template", "TestWalkTemplate"],
 }
 
 PROGRAM_VERSION = "1.0.0"
 POST_RUN_ALLOWED = False
 
 queue_lock = threading.Lock()
+
+CLEAR_CODE = r"""
+ _______ _                    
+(_______) |                   
+ _      | | _____ _____  ____ 
+| |     | || ___ (____ |/ ___)
+| |_____| || ____/ ___ | |    
+ \______)\_)_____)_____|_|
+ """
+
+INFECTED_CODE = r"""
+ _         ___                             _ 
+| |       / __)              _            | |
+| |____ _| |__ _____  ____ _| |_ _____  __| |
+| |  _ (_   __) ___ |/ ___|_   _) ___ |/ _  |
+| | | | || |  | ____( (___  | |_| ____( (_| |
+|_|_| |_||_|  |_____)\____)  \__)_____)\____|
+"""
+
+if os.name == "nt":
+    CLEAR_CODE = r"[32m" + CLEAR_CODE + r"[0m"
+    INFECTED_CODE = r"[91m" + INFECTED_CODE + r"[0m"
 
 
 class TestRunner:
@@ -250,22 +272,29 @@ def run_check(args, agnpath):
         time.sleep(0.5)
     print("The test sequence is now finished")
 
-    print(tr.get_status())  # TODO: Print the final status, test still running are actually skipped
+    status = tr.get_status()
+    print(status)  # TODO: Print the final status, test still running are actually skipped
+    if status.tests_failed > 0:
+        print(INFECTED_CODE)
+        tr.is_infected = True
+    else:
+        print(CLEAR_CODE)
+        tr.is_infected = False
+
     if args.gen_data:
         print("Generating data...")
         data = tr.get_test_data()
-        print("Making folder...")
         file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
         folder = os.path.dirname(file_path)
         if not os.path.exists(folder):
+            print("Making folder...")
             os.makedirs(args.gen_data)
-        print("Exporting data...")
+        print("Exporting data...")  # TODO : Advertize where the data is exported
         main_data = export_data(tr, data)
         # print(main_data)
         with open(file_path, "w") as f:
             json.dump(main_data, f, indent=4)
-        # print(tr.get_test_data())  # TODO: Transorm the data into a yaml or json file
 
-    print(f"Exiting in {args.timeout}...")
+    print(f"Exiting in {args.timeout} seconds...")
     time.sleep(args.timeout)
     sys.exit(tr.get_exit_code())

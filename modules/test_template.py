@@ -205,6 +205,7 @@ class TestWalkTemplate(TestTemplate):
 
         self.set_status("running", "The test will begin shortly, please wait...")
         for path in self.walk():
+            print(path)
             if not self.compare(path, "test", lambda x: True, [], {}):
                 self.add_failure(path, f"Test {self.name()} failed on {path}")
                 if not self.args.continue_on_error:
