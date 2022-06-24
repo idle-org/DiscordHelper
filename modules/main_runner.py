@@ -14,14 +14,16 @@ argparse argument : [module_name, class_name]
 """
 from termcolor import colored, cprint
 os.system('color')
+# red, green, yellow, blue, magenta, cyan, white.
 
 _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
-    #"test_walk": ["test_template", "TestWalkTemplate"],
+    # "test_walk": ["test_template", "TestWalkTemplate"],
 }
 
 PROGRAM_VERSION = "1.0.0"
 POST_RUN_ALLOWED = False
+RUN_OVER = False
 
 queue_lock = threading.Lock()
 
@@ -43,15 +45,25 @@ INFECTED_CODE = colored(r"""
 |_|_| |_||_|  |_____)\____)  \__)_____)\____|
 """, 'red')
 
+LOGO = colored(r"""
+  __ \  _)                              |  |   |        |                    
+  |   |  |   __|   __|   _ \    __|  _` |  |   |   _ \  |  __ \    _ \   __| 
+  |   |  | \__ \  (     (   |  |    (   |  ___ |   __/  |  |   |   __/  |    
+ ____/  _| ____/ \___| \___/  _|   \__,_| _|  _| \___| _|  .__/  \___| _|    
+                                                          _|   
+""", "cyan")
+
 
 class TestRunner:
-    def __init__(self, args, agnpath):
+    def __init__(self, args, agnpath, start_time):
         """
         Main spidey runner
         :param args: List of arguments
         :type args: argparse.Namespace
         :param agnpath: The path to the discord folder
         :type agnpath: agnostic_path.AgnosticPath
+        :param start_time: The time the test started
+        :type start_time: float
         """
         self.ptb = args.ptb
         self.args = args
@@ -59,6 +71,7 @@ class TestRunner:
         self.os_name = agnpath.os
         self.main_path = agnpath.main_path
         self.version = agnpath.version
+        self.start_time = start_time
 
         self.is_infected = 0
         self.detections = 0
@@ -103,7 +116,7 @@ class TestRunner:
         """
         self.list_of_tests = []
         for module_name, test_class in self.loaded_test_classes.items():
-            print(f"Starting test {module_name}")
+            print(colored(f"  > Starting test {module_name}...", "blue"))
             tc = test_class(self.args, self.agnostic_path, None, self.finished_tests, queue_lock)
             tc = threading.Thread(target=tc.run_test, args=())
             tc.name = str(module_name)
@@ -133,25 +146,35 @@ class TestRunner:
         """
         Kills the tests if the user press enter
         """
-        print("Press enter to stop the tests: ")
+        print(colored("\n > All test started, press ENTER to abort...\n", "blue"))
         while True:
-            if input() == "":
-                if not self.is_infected:
-                    global POST_RUN_ALLOWED
-                    POST_RUN_ALLOWED = True
+            #print("Controller still up")
+            try:
+                if input() == "":
+                    global POST_RUN_ALLOWED, RUN_OVER
+                    print(colored("\n > Aborting tests...\n", "red"))
+                    if not self.is_infected:
+                        POST_RUN_ALLOWED = True
+                    RUN_OVER = True
+                    return
+            except KeyboardInterrupt:
                 return
+            except:
+                sys.exit()
 
     def post_test_runner(self):
         """
         Runs the post test runner if all tests are finished
         """
-        global POST_RUN_ALLOWED
+        global POST_RUN_ALLOWED, RUN_OVER
         if self.args.launch:
             while True:
-                if POST_RUN_ALLOWED:
-                    print("Running post test runner...")
-                    return 0
-                time.sleep(0.5)
+                if RUN_OVER:
+                    if POST_RUN_ALLOWED and self.is_infected == 0:  # Second part is redundant
+                        print(colored("\n  > Running post test runner...", "green"))
+                        return 0
+                    return 1
+                time.sleep(0.1)
         return 0
 
     def test_waiter(self):
@@ -161,9 +184,10 @@ class TestRunner:
         """
         for t in self.list_of_tests:  # Can only proceed if all tests are finished
             t.join()
-
+        self.get_status()
+        # time.sleep(0.5)
         # When all tests are finished or the user stopped the tests, we can proceed
-        if not self.is_infected:
+        if self.is_infected == 0:
             global POST_RUN_ALLOWED
             POST_RUN_ALLOWED = True
 
@@ -173,43 +197,57 @@ class TestRunner:
         :return: The exit code
         :rtype: int
         """
-        global POST_RUN_ALLOWED
-        if POST_RUN_ALLOWED:
-            for t in self.list_of_tests:
-                if t.is_alive():
-                    return 2  # 2 means that the user stopped the tests before the end
-            return self.is_infected  # The user didn't stop the tests
-
-        return -1  # The program is not finished yet
+        exit_code = -1
+        status = self.get_status()
+        if status.tests_finished == status.tests_total:
+            if status.tests_failed != 0:
+                exit_code = 1
+            elif status.tests_success == status.tests_total:
+                exit_code = 0
+            else:
+                exit_code = -1
+        else:
+            exit_code = 2
+        return exit_code
+        # global POST_RUN_ALLOWED
+        # if POST_RUN_ALLOWED:
+        #     for t in self.list_of_tests:
+        #         if t.is_alive():
+        #             return 2  # 2 means that the user stopped the tests before the end
+        #     return self.is_infected  # The user didn't stop the tests
+        #
+        # return -1  # The program is not finished yet
 
     def get_status(self):
         """
         Gets the status of the tests
         :return: The status
-        :rtype: str
+        :rtype: internal_io.global_status
         """
-        queue_lock.acquire()
+        queue_lock.acquire(timeout=0.5)
         nb_tests = len(self.list_of_tests)
         nb_tests_success = 0
         nb_tests_failure = 0
         nb_tests_skipped = 0
+        progress = 0
         for test in self.finished_tests:
-            print(f"Test {test.name} finished with status {test.status}")
             if test.status == "success":
                 nb_tests_success += 1
             elif test.status == "failure":
                 nb_tests_failure += 1
+                self.is_infected += 1
             elif test.status == "skipped":
                 nb_tests_skipped += 1
             elif test.status == "problem":
                 nb_tests_failure += 1
+            progress += test.progress
         queue_lock.release()
         nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped
         nb_test_running = nb_tests - nb_tests_ran
         return global_status(
             tests_total=nb_tests,
             tests_finished=nb_tests_ran,
-            test_success=nb_tests_success,
+            tests_success=nb_tests_success,
             tests_failed=nb_tests_failure,
             tests_running=nb_test_running,
             tests_skipped=nb_tests_skipped,
@@ -256,6 +294,30 @@ def export_data(test_runner, data):
     return main_data
 
 
+def print_status(status):
+    """
+    Prints the status
+    :param status: The status
+    :type status: internal_io.global_status
+    """
+    if status.tests_failed != 0:
+        color = "red"
+    else:
+        color = "green"
+
+    print(colored("\n > Status:", color))
+    if status.tests_total == 0:
+        print(colored("  > No test found", "red"))
+        return
+
+    print(colored(
+        f"   > Test finished {status.tests_finished}/{status.tests_total}"
+        f": {status.tests_success} success, "
+        f"{status.tests_failed} failed, "
+        f"{status.tests_error} problem", color
+    ))
+
+
 def run_check(args, agnpath):
     """
     Runs all operations selected in the config
@@ -263,37 +325,46 @@ def run_check(args, agnpath):
     :param agnpath: Annostic path to the discord folder
     :return: None
     """
-    tr = TestRunner(args, agnpath)  # All operation are executed in parallel and the user can stop them
-
-    print("Waiting for the end of the tests")
+    print(LOGO)
+    start = time.time()
+    tr = TestRunner(args, agnpath, start_time=start)  # All operation are executed in parallel and the user can stop them
+    # print("Waiting for the end of the tests")
     while tr.get_exit_code() == -1:
-        print(tr.get_status())  # TODO : Print status in a more readable way
+        # print("Waiting for the end of the tests")
+        print_status(tr.get_status())  # TODO : Print status in a more readable way
         time.sleep(0.5)
-    print("The test sequence is now finished")
+    time.sleep(0.5)  # TODO : Remove this line
+    global RUN_OVER
+    RUN_OVER = True
 
     status = tr.get_status()
-    print(status)  # TODO: Print the final status, test still running are actually skipped
     if status.tests_failed > 0:
         print(INFECTED_CODE)
-        tr.is_infected = True
+        # tr.is_infected += 1
+        color = "red"
     else:
         print(CLEAR_CODE)
-        tr.is_infected = False
+        color = "green"
+        # tr.is_infected = False
+
+    print(colored(f"\nThe test sequence is now finished, the program ran for {round(time.time() - start,2)} seconds", color))
+    print_status(status)  # TODO: Print the final status, test still running are actually skipped
 
     if args.gen_data:
-        print("Generating data...")
+        print(colored("  > Generating data...", "blue"))
         data = tr.get_test_data()
         file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
         folder = os.path.dirname(file_path)
         if not os.path.exists(folder):
-            print("Making folder...")
-            os.makedirs(args.gen_data)
-        print(f"Exporting the test data to {file_path}")  # TODO : Advertize where the data is exported
+            print(colored("  > Making folder...", "blue"))
+            os.makedirs(folder)
+        print(colored(f"  > Exporting the test data to {file_path}", "blue"))  # TODO : Advertize where the data is exported
         main_data = export_data(tr, data)
         # print(main_data)
         with open(file_path, "w") as f:
             json.dump(main_data, f, indent=4)
 
-    print(f"The program executed succesfully, exiting in {args.timeout} seconds...")
+    msg_error = "sucessfully" if status.tests_failed == 0 else f"with {status.tests_error} errors"
+    print(colored(f"The program executed {msg_error}, exiting in {args.timeout} seconds...", color))
     time.sleep(args.timeout)
     sys.exit(tr.get_exit_code())

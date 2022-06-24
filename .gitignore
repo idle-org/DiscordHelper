@@ -132,3 +132,4 @@ dmypy.json
 
 /.idea/*
 databases/*
+/discordHelper/discordHelper_last_run.json.yaml
