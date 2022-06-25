@@ -314,10 +314,6 @@
             "size": 7851008,
             "adler32": "0xa44fdf49"
         },
-        "modules\\discord_dispatch-1\\discord_dispatch\\dispatch.log": {
-            "size": 12789,
-            "adler32": "0x353c1aeb"
-        },
         "modules\\discord_dispatch-1\\discord_dispatch\\index.js": {
             "size": 653,
             "adler32": "0x9f7fd042"

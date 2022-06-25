@@ -18,7 +18,8 @@ def apply_adler(path):
     with open(path, "rb") as f:
         return hex(adler32(f.read()))
 
-class AdlerTest(test_template.TestWalkTemplate):
+
+class AdlerTest(test_template.TestWalkTemplateNoLogs):
     def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
         """
         Simple test runner, compare adler32 to known good values.

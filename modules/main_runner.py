@@ -7,7 +7,7 @@ import time
 from collections import deque
 
 from modules.internal_io import global_status
-from modules import size_test, adler_test
+from modules import size_test, adler_test # noqa # Used to force import of modules by pyinstaller
 
 """
 All modules that can be tested
@@ -423,7 +423,7 @@ def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS  # noqa
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
@@ -447,10 +447,11 @@ def print_final_status(testrunner, start_time, args):
             print(colored(f"  > {fill_it(SIZE,test,'SUCCESS')}", "green"))
         elif test_object.status_code == "failure":
             print(colored(f"  > {fill_it(SIZE,test,'FAILURE')}", "red"))
-            error_message = fit_it_under(test_object.status ,SIZE-3, '    > ')
+            error_message = fit_it_under(test_object.status, SIZE-3, '    > ')
             if args.max_shown != -1:  # TODO : Correct this abomination
                 table = error_message.split("\n")
-                error_message = "\n".join(table[:args.max_shown] + [f"    > ... {len(table) - args.max_shown} more lines"])
+                extra = [f"    > ... {len(table) - args.max_shown} more lines"] if len(table) > args.max_shown else []
+                error_message = "\n".join(table[:args.max_shown] + extra)
             print(colored(f"{error_message}", "red"))
         else:
             print(colored(f"  > {fill_it(SIZE,test,test_object.status_code.upper())}", "yellow"))

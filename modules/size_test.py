@@ -5,7 +5,7 @@ import time
 from modules import test_template
 
 
-class SizeTest(test_template.TestWalkTemplate):
+class SizeTest(test_template.TestWalkTemplateNoLogs):
     def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
         """
         Simple test runner, compare file size to known good values.
