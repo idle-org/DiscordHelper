@@ -6,7 +6,8 @@ import threading
 import time
 from collections import deque
 
-from modules.internal_io import global_status  # , test_status, return_code_dict
+from modules.internal_io import global_status
+from modules import size_test, adler_test
 
 """
 All modules that can be tested
@@ -21,6 +22,7 @@ _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
     # "test_walk": ["test_template", "TestWalkTemplate"],
     "size_test": ["size_test", "SizeTest"],
+    "adler_test": ["adler_test", "AdlerTest"],
 }
 
 PROGRAM_VERSION = "1.0.0"
