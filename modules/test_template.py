@@ -165,8 +165,7 @@ class TestWalkTemplate(TestTemplate):
         :type test_data: str
         """
         super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
-        # if test_data is None:
-        #     self.set_status("problem", "No test data given.")
+        self.to_skip = []
 
     def add_test_result(self, path, testname, result):
         """
@@ -266,7 +265,11 @@ class TestWalkTemplate(TestTemplate):
         :type cmp_function: function
         """
 
+        if self.agnostic_path.get_short_path(path) in self.to_skip:
+            return True
+
         data_origin = self.add_test_result(path, entry_name, function(path, *args, **kwargs))
+
         expected_data = self.get_expected_result(path, entry_name)
         if expected_data is None and not self.args.continue_on_error:
             self.set_status("problem", f"No expected data found for {path}")
@@ -281,3 +284,17 @@ class TestWalkTemplate(TestTemplate):
                 return True
             return False
 
+
+class TestWalkTemplateNoLogs(TestWalkTemplate):
+    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
+        """
+        Simple test template.
+        :param args: List of arguments
+        :type args: argparse.Namespace
+        :param agnpath: The path to the discord folder
+        :type agnpath: agnostic_path.AgnosticPath
+        :param test_data: The data to be tested
+        :type test_data: str
+        """
+        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
+        self.to_skip = [r"modules\discord_dispatch-1\discord_dispatch\dispatch.log"]
