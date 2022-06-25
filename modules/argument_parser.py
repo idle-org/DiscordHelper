@@ -24,9 +24,11 @@ def parse(_args):
     parser.add_argument("--force-path", nargs=1, default=None, help="Bypass the automatic path discovery with given path")
     parser.add_argument("--only-known-paths", "--fast", action='store_true', help="Only run the check on the known paths")
     parser.add_argument("--gen-data", "--generate-data", "--gen", nargs=1, default="", help="Generate data for the analysis")
-    parser.add_argument("--database", "--db", nargs=1, default="", help="Alternative database for the analysis")
+    parser.add_argument("--database", "--db", type=str, help="Alternative database for the analysis")
     parser.add_argument("--pollrate", "--poll", default=0.1, type=float, help="Refresh rate of the status, 0.1 is the default")
     parser.add_argument("--printrate", "-refresh", default=5, type=int, help="Print the tests every X seconds")
+    parser.add_argument("--size", "--window-size", default=110, type=int, help="Size of the message window")
+    parser.add_argument("--max-shown", default=5, type=int, help="Maximum number of errors shown")
 
     # Tests
     parser.add_argument('--spidey', action='store_true', help='Runs the spidey test')
@@ -43,5 +45,6 @@ def parse(_args):
     parser.add_argument("--no-eval", action="store_true", help="Check for the eval function wich is a HUGE red flag")
     parser.add_argument("--const-abuse", "--no-const", action="store_true", help="Check for the abuse of the const: keyword, wich is massively used for obfucation")
     parser.add_argument("--test-walk", action="store_true", help="Test walk function")
+    parser.add_argument("--max-errors", default=5, type=int, help="Maximum number of errors before the analysis is stopped")
 
     return parser.parse_args(_args)

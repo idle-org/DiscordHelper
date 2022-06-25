@@ -40,16 +40,17 @@ class SpideyTest(test_template.TestTemplate):
         if lines > 1:
             self.is_infected = True
 
-        # self.is_infected = True
-        if self.is_infected:  # TODO: set a status here, explaining and why the test failed, the scary part will be handled by the main program
-            return self.finish("failure", "\n!!! WARNING !!!\n"
-                  "Unless you've installed a plugin you really trust, chances are your discord install "
-                  "is corrupted. We suggest uninstalling discord and deleting all its files before reinstalling.\n"
-                  "If you've recently downloaded a .exe directly sent from someone, "
-                  "do also consider a clean windows reinstall.")
+        if self.is_infected:
+            return self.finish(
+                "failure",
+                "Unless you've installed a plugin you really trust, chances are your discord install "
+                "is corrupted. We suggest uninstalling discord and deleting all its files before reinstalling.\n"
+                "If you've recently downloaded a .exe directly sent from someone, "
+                "do also consider a clean windows reinstall."
+            )
 
         self.progress = 100
-        return self.finish("success")
+        return self.finish("success", "Your discord is not infected.")
 
     def get_path(self):
         """

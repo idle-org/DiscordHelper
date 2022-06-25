@@ -5,22 +5,24 @@ import importlib
 import threading
 import time
 from collections import deque
-from datetime import datetime
 
-from modules.internal_io import global_status  # , test_status, return_code_dict
+from modules.internal_io import global_status
+from modules import size_test, adler_test
 
 """
 All modules that can be tested
 Associate the arguments passed to the command line with the modules to be loaded
 argparse argument : [module_name, class_name]
 """
-from termcolor import colored, cprint
+from termcolor import colored
 os.system('color')
 # red, green, yellow, blue, magenta, cyan, white.
 
 _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
     # "test_walk": ["test_template", "TestWalkTemplate"],
+    "size_test": ["size_test", "SizeTest"],
+    "adler_test": ["adler_test", "AdlerTest"],
 }
 
 PROGRAM_VERSION = "1.0.0"
@@ -86,9 +88,42 @@ class TestRunner:
         self.dict_of_processes = {}  # To get a more granular view of the processes
         self.update_module_list()
 
+        self.base_data = {}
         self.finished_tests = deque()
 
+        self.open_base_data()
         self.exec_all_tests()
+
+    def open_base_data(self):
+        """
+        Opens the base data file
+        """
+
+        default_database = resource_path(self.agnostic_path.default_database)
+        if not self.args.database:
+            self.args.database = default_database
+
+        if os.path.exists(self.args.database):
+            print(colored(f" > Opening specified database {self.args.database}", "green"))  # TODO : Only if verbose
+            with open(resource_path(self.args.database), "r") as f:
+                self.base_data = json.load(f)
+            return self.base_data
+        elif os.path.exists(resource_path(default_database)):  # Try opening the default database
+            print(colored(
+                "\n > The database file specified does not exist, "
+                "trying to open the default one for your os...\n", "yellow"
+            ))
+            with open(resource_path(default_database), "r") as f:
+                self.base_data = json.load(f)
+            return self.base_data
+
+        else:
+            print(colored(
+                "\n > The database file does not exist, and the default "
+                "one for your os does not exist either.\n", "red"
+            ))
+            self.base_data = {}
+            return self.base_data
 
     def update_module_list(self):
         """
@@ -115,8 +150,6 @@ class TestRunner:
     def exec_all_tests(self):
         """
         Executes all the tests, get their result as they finishes
-        :return: The number of test ran, success, failures, skipped (with ran = success+failures+skip)
-        :rtype: (int,int,int,int) # TODO: Change this to a nametuple
         """
         self.list_of_tests = []
         for module_name, test_class in self.loaded_test_classes.items():
@@ -124,7 +157,7 @@ class TestRunner:
             tc = test_class(
                 self.args,
                 self.agnostic_path,
-                None,
+                self.base_data,
                 self.finished_tests,
                 queue_lock,
                 self.dict_of_processes,
@@ -152,15 +185,13 @@ class TestRunner:
         tc.daemon = True
         tc.start()
 
-        return self.is_infected, self.detections, self.test_run
-
     def controller_test(self):
         """
         Kills the tests if the user press enter
         """
         print(colored("\n > All test started, press ENTER to abort...\n", "blue"))
         while True:
-            #print("Controller still up")
+            # print("Controller still up")
             try:
                 if input() == "":
                     global POST_RUN_ALLOWED, RUN_OVER
@@ -356,51 +387,114 @@ def run_check(args, agnpath):
     :param agnpath: Annostic path to the discord folder
     :return: None
     """
+    # Initialize the test runner
     print(LOGO)
     start = time.time()
     tr = TestRunner(args, agnpath, start_time=start)  # All operation are executed in parallel and the user can stop them
 
+    # Poll information from the tests
     POLLRATE, PRINT_RATE, COUNTER = args.pollrate, args.printrate, 0
     COUNTER_MAX = int(PRINT_RATE / POLLRATE)
 
+    # Main test polling loop
     while tr.get_exit_code() == -1:
-        # print("Waiting for the end of the tests")
         if (COUNTER % COUNTER_MAX) == 0:
-            print_status(tr.get_status(), start)  # TODO : Print status in a more readable way
+            print_status(tr.get_status(), start)
         time.sleep(POLLRATE)
         COUNTER += 1
 
+    # Print the final status
     global RUN_OVER
     RUN_OVER = True
 
-    status = tr.get_status()
-    if status.tests_failed > 0:
-        print(INFECTED_CODE)
-        # tr.is_infected += 1
-        color = "red"
-    else:
-        print(CLEAR_CODE)
-        color = "green"
-        # tr.is_infected = False
+    # Final status
+    print_final_status(tr, start, args)
 
-    print(colored(f"\nThe test sequence is now finished, the program ran for {round(time.time() - start,2)} seconds", color))
-    print_status(status, start)  # TODO: Print the final status, test still running are actually skipped
-
+    # Export the data
     if args.gen_data:
-        print(colored("\n  > Generating data...", "blue"))
-        data = tr.get_test_data()
-        file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
-        folder = os.path.dirname(file_path)
-        if not os.path.exists(folder):
-            print(colored("  > Making folder...", "blue"))
-            os.makedirs(folder)
-        print(colored(f"  > Exporting the test data to {file_path}", "blue"))  # TODO : Advertize where the data is exported
-        main_data = export_data(tr, data)
-        # print(main_data)
-        with open(file_path, "w") as f:
-            json.dump(main_data, f, indent=4)
+        gen_save_data(args, tr)
 
-    msg_error = "sucessfully" if status.tests_failed == 0 else f"with {status.tests_error} errors"
-    print(colored(f"\nThe program executed {msg_error}, exiting in {args.timeout} seconds...", color))
+    # Sleep for a while to let the user see the final status
     time.sleep(args.timeout)
     sys.exit(tr.get_exit_code())
+
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
+def print_final_status(testrunner, start_time, args):
+    """
+    Prints the final status
+    """
+    status = testrunner.get_status()
+    if status.tests_failed == 0:
+        color = "green"
+        print(CLEAR_CODE)
+    else:
+        color = "red"
+        print(INFECTED_CODE)
+    print(colored(f"\nThe test sequence is now finished, DiscordHelper ran for {round(time.time() - start_time,2)} seconds", color))
+    SIZE = args.size
+    for test, test_object in testrunner.dict_of_processes.items():
+        if test_object.status_code == "success":
+            print(colored(f"  > {fill_it(SIZE,test,'SUCCESS')}", "green"))
+        elif test_object.status_code == "failure":
+            print(colored(f"  > {fill_it(SIZE,test,'FAILURE')}", "red"))
+            error_message = fit_it_under(test_object.status ,SIZE-3, '    > ')
+            if args.max_shown != -1:  # TODO : Correct this abomination
+                table = error_message.split("\n")
+                error_message = "\n".join(table[:args.max_shown] + [f"    > ... {len(table) - args.max_shown} more lines"])
+            print(colored(f"{error_message}", "red"))
+        else:
+            print(colored(f"  > {fill_it(SIZE,test,test_object.status_code.upper())}", "yellow"))
+    msg_error = "sucessfully" if status.tests_failed == 0 else f"with {status.tests_error} errors"
+    print(colored(f"\nThe program executed {msg_error}, exiting in {args.timeout} seconds...", color))
+
+
+def fill_it(size, string1, string2):
+    """
+    Fills a string with a character
+    """
+    return string1 + max(size - len(string1)-len(string2), 0) * "." + string2
+
+
+def fit_it_under(message, size, start_line=""):
+    """
+    Fits a message under a size
+    """
+    final_message = ""
+    for line in message.split('\n'):
+        if len(line) > size:
+            final_message += start_line + line[:size] + "\n"
+            final_message += fit_it_under(line[size:], size, start_line)
+        else:
+            final_message += start_line + line + "\n"
+    #     final_message += start_line + line + '\n'
+    # if len(message) > size:
+    #     return message[:size-3] + "..."
+    return final_message
+
+
+def gen_save_data(args, test_runner):
+    """
+    Generates the save data
+    """
+    print(colored("\n  > Generating data...", "blue"))
+    data = test_runner.get_test_data()
+    file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
+    folder = os.path.dirname(file_path)
+    if not os.path.exists(folder):
+        print(colored("  > Making folder...", "blue"))
+        os.makedirs(folder)
+    print(colored(f"  > Exporting the test data to {file_path}", "blue"))
+    main_data = export_data(test_runner, data)
+    # print(main_data)
+    with open(file_path, "w") as f:
+        json.dump(main_data, f, indent=4)
