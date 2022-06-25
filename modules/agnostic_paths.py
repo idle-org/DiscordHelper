@@ -174,7 +174,16 @@ class AgnosticPaths:
         return [os.path.join(dirpath, filename)
                 for dirpath, dirnames, filenames in os.walk(self(*args))
                 for filename in filenames]
-    
+
+    def get_short_path(self, path):
+        """
+        Get the short path of the given path
+        :param path: The path
+        :return: The short path
+        :rtype: str
+        """
+        return os.path.relpath(path, self.main_path)
+
     def __repr__(self):
         """
         :return: A representation of the AgnosticPath

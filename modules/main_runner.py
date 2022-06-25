@@ -96,20 +96,24 @@ class TestRunner:
         """
         Opens the base data file
         """
+
         default_database = resource_path(self.agnostic_path.default_database)
         if not self.args.database:
             self.args.database = default_database
+
         if os.path.exists(self.args.database):
+            print(colored(f" > Opening specified database {self.args.database}", "green"))  # TODO : Only if verbose
             with open(resource_path(self.args.database), "r") as f:
                 self.base_data = json.load(f)
-
-        elif os.path.exists(default_database):  # Try opening the default database
-            # print(colored(
-            #     "\n > The database file specified does not exist, "
-            #     "trying to open the default one for your os...\n", "yellow"
-            # ))
+            return self.base_data
+        elif os.path.exists(resource_path(default_database)):  # Try opening the default database
+            print(colored(
+                "\n > The database file specified does not exist, "
+                "trying to open the default one for your os...\n", "yellow"
+            ))
             with open(resource_path(default_database), "r") as f:
                 self.base_data = json.load(f)
+            return self.base_data
 
         else:
             print(colored(
@@ -117,6 +121,7 @@ class TestRunner:
                 "one for your os does not exist either.\n", "red"
             ))
             self.base_data = {}
+            return self.base_data
 
     def update_module_list(self):
         """
@@ -150,7 +155,7 @@ class TestRunner:
             tc = test_class(
                 self.args,
                 self.agnostic_path,
-                None,
+                self.base_data,
                 self.finished_tests,
                 queue_lock,
                 self.dict_of_processes,
@@ -177,7 +182,6 @@ class TestRunner:
         tc = threading.Thread(target=self.test_waiter, args=())
         tc.daemon = True
         tc.start()
-
 
     def controller_test(self):
         """
@@ -441,9 +445,13 @@ def print_final_status(testrunner, start_time, args):
             print(colored(f"  > {fill_it(SIZE,test,'SUCCESS')}", "green"))
         elif test_object.status_code == "failure":
             print(colored(f"  > {fill_it(SIZE,test,'FAILURE')}", "red"))
-            print(colored(f"{fit_it_under(test_object.status ,SIZE-3, '    > ')}", "red"))
+            error_message = fit_it_under(test_object.status ,SIZE-3, '    > ')
+            if args.max_shown != -1:  # TODO : Correct this abomination
+                table = error_message.split("\n")
+                error_message = "\n".join(table[:args.max_shown] + [f"    > ... {len(table) - args.max_shown} more lines"])
+            print(colored(f"{error_message}", "red"))
         else:
-            print(colored(f"  > {test} {fill_it(SIZE,test,test_object.status_code.upper())}", "yellow"))
+            print(colored(f"  > {fill_it(SIZE,test,test_object.status_code.upper())}", "yellow"))
     msg_error = "sucessfully" if status.tests_failed == 0 else f"with {status.tests_error} errors"
     print(colored(f"\nThe program executed {msg_error}, exiting in {args.timeout} seconds...", color))
 

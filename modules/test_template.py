@@ -21,7 +21,7 @@ class TestTemplate:
         :param agnpath: The path to the discord folder
         :type agnpath: agnostic_path.AgnosticPath
         :param test_data: The data to be tested
-        :type test_data: str
+        :type test_data: dict
         :param queue: The queue to put the test status in
         :type queue: queue.deque
         :param queue_lock: The lock to use when putting the test status in the queue
@@ -179,6 +179,7 @@ class TestWalkTemplate(TestTemplate):
         :type result: any
         """
 
+        path = self.agnostic_path.get_short_path(path)
         if path not in self.new_data:
             self.new_data[path] = {}
         self.new_data[path][testname] = result
@@ -194,6 +195,7 @@ class TestWalkTemplate(TestTemplate):
         :return: Test data
         :rtype: any
         """
+        path = self.agnostic_path.get_short_path(path)
         if path in self.new_data:
             if testname in self.new_data[path]:
                 return self.new_data[path][testname]
@@ -210,9 +212,11 @@ class TestWalkTemplate(TestTemplate):
         :rtype: any
         """
         if self.test_data:
-            if path in self.test_data:
-                if testname in self.test_data[path]:
-                    return self.test_data[path][testname]
+            path = self.agnostic_path.get_short_path(path)
+            if "tests" in self.test_data:
+                if path in self.test_data["tests"]:
+                    if testname in self.test_data["tests"][path]:
+                        return self.test_data["tests"][path][testname]
         return None
 
     def run_test(self):
