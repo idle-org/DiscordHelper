@@ -5,7 +5,6 @@ import importlib
 import threading
 import time
 from collections import deque
-from datetime import datetime
 
 from modules.internal_io import global_status  # , test_status, return_code_dict
 
@@ -14,7 +13,7 @@ All modules that can be tested
 Associate the arguments passed to the command line with the modules to be loaded
 argparse argument : [module_name, class_name]
 """
-from termcolor import colored, cprint
+from termcolor import colored
 os.system('color')
 # red, green, yellow, blue, magenta, cyan, white.
 
@@ -160,7 +159,7 @@ class TestRunner:
         """
         print(colored("\n > All test started, press ENTER to abort...\n", "blue"))
         while True:
-            #print("Controller still up")
+            # print("Controller still up")
             try:
                 if input() == "":
                     global POST_RUN_ALLOWED, RUN_OVER
@@ -356,51 +355,69 @@ def run_check(args, agnpath):
     :param agnpath: Annostic path to the discord folder
     :return: None
     """
+    # Initialize the test runner
     print(LOGO)
     start = time.time()
     tr = TestRunner(args, agnpath, start_time=start)  # All operation are executed in parallel and the user can stop them
 
+    # Poll information from the tests
     POLLRATE, PRINT_RATE, COUNTER = args.pollrate, args.printrate, 0
     COUNTER_MAX = int(PRINT_RATE / POLLRATE)
 
+    # Main test polling loop
     while tr.get_exit_code() == -1:
-        # print("Waiting for the end of the tests")
         if (COUNTER % COUNTER_MAX) == 0:
-            print_status(tr.get_status(), start)  # TODO : Print status in a more readable way
+            print_status(tr.get_status(), start)
         time.sleep(POLLRATE)
         COUNTER += 1
 
+    # Print the final status
     global RUN_OVER
     RUN_OVER = True
 
-    status = tr.get_status()
-    if status.tests_failed > 0:
-        print(INFECTED_CODE)
-        # tr.is_infected += 1
-        color = "red"
-    else:
-        print(CLEAR_CODE)
-        color = "green"
-        # tr.is_infected = False
+    # Final status
+    print_final_status(tr, start, args)
 
-    print(colored(f"\nThe test sequence is now finished, the program ran for {round(time.time() - start,2)} seconds", color))
-    print_status(status, start)  # TODO: Print the final status, test still running are actually skipped
-
+    # Export the data
     if args.gen_data:
-        print(colored("\n  > Generating data...", "blue"))
-        data = tr.get_test_data()
-        file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
-        folder = os.path.dirname(file_path)
-        if not os.path.exists(folder):
-            print(colored("  > Making folder...", "blue"))
-            os.makedirs(folder)
-        print(colored(f"  > Exporting the test data to {file_path}", "blue"))  # TODO : Advertize where the data is exported
-        main_data = export_data(tr, data)
-        # print(main_data)
-        with open(file_path, "w") as f:
-            json.dump(main_data, f, indent=4)
+        gen_save_data(args, tr)
+
+    # Sleep for a while to let the user see the final status
+    time.sleep(args.timeout)
+    sys.exit(tr.get_exit_code())
+
+
+def print_final_status(testrunner, start_time, args):
+    """
+    Prints the final status
+    """
+    status = testrunner.get_status()
+    if status.tests_failed == 0:
+        color = "green"
+        print(CLEAR_CODE)
+    else:
+        color = "red"
+        print(INFECTED_CODE)
+    print(colored(f"\nThe test sequence is now finished, DiscordHelper ran for {round(time.time() - start_time,2)} seconds", color))
+    print_status(status, start_time)
 
     msg_error = "sucessfully" if status.tests_failed == 0 else f"with {status.tests_error} errors"
     print(colored(f"\nThe program executed {msg_error}, exiting in {args.timeout} seconds...", color))
-    time.sleep(args.timeout)
-    sys.exit(tr.get_exit_code())
+
+
+def gen_save_data(args, test_runner):
+    """
+    Generates the save data
+    """
+    print(colored("\n  > Generating data...", "blue"))
+    data = test_runner.get_test_data()
+    file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
+    folder = os.path.dirname(file_path)
+    if not os.path.exists(folder):
+        print(colored("  > Making folder...", "blue"))
+        os.makedirs(folder)
+    print(colored(f"  > Exporting the test data to {file_path}", "blue"))  # TODO : Advertize where the data is exported
+    main_data = export_data(test_runner, data)
+    # print(main_data)
+    with open(file_path, "w") as f:
+        json.dump(main_data, f, indent=4)
