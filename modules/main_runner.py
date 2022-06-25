@@ -105,7 +105,7 @@ class TestRunner:
 
         if os.path.exists(self.args.database):
             print(colored(f" > Opening specified database {self.args.database}", "green"))  # TODO : Only if verbose
-            with open(resource_path(self.args.database), "r") as f:
+            with open(self.args.database, "r") as f:
                 self.base_data = json.load(f)
             return self.base_data
         elif os.path.exists(resource_path(default_database)):  # Try opening the default database
