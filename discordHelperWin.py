@@ -25,7 +25,7 @@ if __name__ == "__main__":
                 # print("  > No user database was found, the bundled one will be used.")
 
             run_db = os.path.join(directory_path, "discordHelper_last_run.json")
-            argv = f"--all --autodetect --launch --continue --timeout 10 {db_path}--gen-data {run_db}.yaml".split(" ")
+            argv = f"--all --autodetect --launch --continue --timeout 1 {db_path}--gen-data {run_db}.yaml".split(" ")
 
         # print("  > Starting the discordHelper with the following arguments:")
         # print("    > " + " ".join(argv))

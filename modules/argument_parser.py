@@ -25,6 +25,8 @@ def parse(_args):
     parser.add_argument("--only-known-paths", "--fast", action='store_true', help="Only run the check on the known paths")
     parser.add_argument("--gen-data", "--generate-data", "--gen", nargs=1, default="", help="Generate data for the analysis")
     parser.add_argument("--database", "--db", nargs=1, default="", help="Alternative database for the analysis")
+    parser.add_argument("--pollrate", "--poll", default=0.1, type=float, help="Refresh rate of the status, 0.1 is the default")
+    parser.add_argument("--printrate", "-refresh", default=5, type=int, help="Print the tests every X seconds")
 
     # Tests
     parser.add_argument('--spidey', action='store_true', help='Runs the spidey test')

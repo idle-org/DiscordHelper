@@ -5,6 +5,8 @@ import importlib
 import threading
 import time
 from collections import deque
+from datetime import datetime
+
 from modules.internal_io import global_status  # , test_status, return_code_dict
 
 """
@@ -22,10 +24,11 @@ _TEST_MODULES = {
 }
 
 PROGRAM_VERSION = "1.0.0"
-POST_RUN_ALLOWED = False
+POST_RUN_ALLOWED = False  # TODO : Remove this line, only use is_infected
 RUN_OVER = False
 
 queue_lock = threading.Lock()
+processes_lock = threading.Lock()
 
 CLEAR_CODE = colored(r"""
  _______ _                    
@@ -80,6 +83,7 @@ class TestRunner:
         self.loaded_test_modules = {}
         self.loaded_test_classes = {}
         self.list_of_tests = []
+        self.dict_of_processes = {}  # To get a more granular view of the processes
         self.update_module_list()
 
         self.finished_tests = deque()
@@ -117,7 +121,15 @@ class TestRunner:
         self.list_of_tests = []
         for module_name, test_class in self.loaded_test_classes.items():
             print(colored(f"  > Starting test {module_name}...", "blue"))
-            tc = test_class(self.args, self.agnostic_path, None, self.finished_tests, queue_lock)
+            tc = test_class(
+                self.args,
+                self.agnostic_path,
+                None,
+                self.finished_tests,
+                queue_lock,
+                self.dict_of_processes,
+                processes_lock
+            )
             tc = threading.Thread(target=tc.run_test, args=())
             tc.name = str(module_name)
             tc.daemon = True
@@ -158,6 +170,7 @@ class TestRunner:
                     RUN_OVER = True
                     return
             except KeyboardInterrupt:
+                RUN_OVER = True
                 return
             except:
                 sys.exit()
@@ -197,26 +210,24 @@ class TestRunner:
         :return: The exit code
         :rtype: int
         """
-        exit_code = -1
         status = self.get_status()
         if status.tests_finished == status.tests_total:
             if status.tests_failed != 0:
-                exit_code = 1
+                exit_code = 1  # There is one failure, so the test failed
             elif status.tests_success == status.tests_total:
-                exit_code = 0
+                exit_code = 0  # All tests passed
             else:
-                exit_code = -1
+                # print("Something went wrong, please report this bug.")
+                # print(status)
+                exit_code = 2  # Something went wrong
         else:
-            exit_code = 2
+            global RUN_OVER
+            if RUN_OVER:
+                print(colored("\n  > Tests aborted, please check the logs.", "red"))
+                exit_code = 3
+            else:
+                exit_code = -1  # The tests are not finished
         return exit_code
-        # global POST_RUN_ALLOWED
-        # if POST_RUN_ALLOWED:
-        #     for t in self.list_of_tests:
-        #         if t.is_alive():
-        #             return 2  # 2 means that the user stopped the tests before the end
-        #     return self.is_infected  # The user didn't stop the tests
-        #
-        # return -1  # The program is not finished yet
 
     def get_status(self):
         """
@@ -240,8 +251,13 @@ class TestRunner:
                 nb_tests_skipped += 1
             elif test.status == "problem":
                 nb_tests_failure += 1
-            progress += test.progress
+            # progress += test.progress
         queue_lock.release()
+
+        for test_name, test in self.dict_of_processes.items():
+            progress += test.progress
+        progress = int(progress / nb_tests)
+
         nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped
         nb_test_running = nb_tests - nb_tests_ran
         return global_status(
@@ -251,7 +267,8 @@ class TestRunner:
             tests_failed=nb_tests_failure,
             tests_running=nb_test_running,
             tests_skipped=nb_tests_skipped,
-            tests_error=nb_tests_failure
+            tests_error=nb_tests_failure,
+            progress=progress
         )
 
     def get_test_data(self):
@@ -268,7 +285,6 @@ class TestRunner:
                     data[key] = value
                 else:
                     data[key].update(value)
-            # data.update(test.data)
         queue_lock.release()
         return data
 
@@ -294,11 +310,13 @@ def export_data(test_runner, data):
     return main_data
 
 
-def print_status(status):
+def print_status(status, timer_start):
     """
     Prints the status
     :param status: The status
     :type status: internal_io.global_status
+    :param timer_start: The start time of the tests
+    :type timer_start: float
     """
     if status.tests_failed != 0:
         color = "red"
@@ -316,6 +334,19 @@ def print_status(status):
         f"{status.tests_failed} failed, "
         f"{status.tests_error} problem", color
     ))
+    if status.tests_running != 0:
+        ellapsed_time = time.time() - timer_start
+        if status.progress == 0:
+            estimated_time = "∞"
+        else:
+            mon, sec = divmod(ellapsed_time * 100 / status.progress, 60)
+            hr, mon = divmod(mon, 60)
+            estimated_time = "%d:%02d:%02d" % (hr, mon, sec)
+        print(colored(
+            f"   > Overall progress: {status.progress}%"
+            f" in {time.time() - timer_start:.2f} seconds"
+            f" estimaded time ({estimated_time})", color
+        ))
 
 
 def run_check(args, agnpath):
@@ -328,12 +359,17 @@ def run_check(args, agnpath):
     print(LOGO)
     start = time.time()
     tr = TestRunner(args, agnpath, start_time=start)  # All operation are executed in parallel and the user can stop them
-    # print("Waiting for the end of the tests")
+
+    POLLRATE, PRINT_RATE, COUNTER = args.pollrate, args.printrate, 0
+    COUNTER_MAX = int(PRINT_RATE / POLLRATE)
+
     while tr.get_exit_code() == -1:
         # print("Waiting for the end of the tests")
-        print_status(tr.get_status())  # TODO : Print status in a more readable way
-        time.sleep(0.5)
-    time.sleep(0.5)  # TODO : Remove this line
+        if (COUNTER % COUNTER_MAX) == 0:
+            print_status(tr.get_status(), start)  # TODO : Print status in a more readable way
+        time.sleep(POLLRATE)
+        COUNTER += 1
+
     global RUN_OVER
     RUN_OVER = True
 
@@ -348,10 +384,10 @@ def run_check(args, agnpath):
         # tr.is_infected = False
 
     print(colored(f"\nThe test sequence is now finished, the program ran for {round(time.time() - start,2)} seconds", color))
-    print_status(status)  # TODO: Print the final status, test still running are actually skipped
+    print_status(status, start)  # TODO: Print the final status, test still running are actually skipped
 
     if args.gen_data:
-        print(colored("  > Generating data...", "blue"))
+        print(colored("\n  > Generating data...", "blue"))
         data = tr.get_test_data()
         file_path = os.path.join(os.path.join("databases", args.gen_data[0]))
         folder = os.path.dirname(file_path)
@@ -365,6 +401,6 @@ def run_check(args, agnpath):
             json.dump(main_data, f, indent=4)
 
     msg_error = "sucessfully" if status.tests_failed == 0 else f"with {status.tests_error} errors"
-    print(colored(f"The program executed {msg_error}, exiting in {args.timeout} seconds...", color))
+    print(colored(f"\nThe program executed {msg_error}, exiting in {args.timeout} seconds...", color))
     time.sleep(args.timeout)
     sys.exit(tr.get_exit_code())

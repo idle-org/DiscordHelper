@@ -13,7 +13,7 @@ class TestDataError(Exception):
 
 
 class TestTemplate:
-    def __init__(self, args, agnpath, test_data, queue, queue_lock):
+    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
         """
         Simple test template.
         :param args: List of arguments
@@ -26,6 +26,10 @@ class TestTemplate:
         :type queue: queue.deque
         :param queue_lock: The lock to use when putting the test status in the queue
         :type queue_lock: threading.Lock
+        :param dict_process: The dictionary of processes
+        :type dict_process: dict
+        :param dict_process_lock: The lock to use when putting the process in the dictionary
+        :type dict_process_lock: threading.Lock
         """
         self.args = args
         self.ptb = args.ptb
@@ -42,6 +46,11 @@ class TestTemplate:
         self.failure_dict = {}
         self.new_data = {}
         self.progress = 0
+        self.dict_process = dict_process
+        self.dict_process_lock = dict_process_lock
+        self.dict_process_lock.acquire()
+        self.dict_process[self.name()] = self
+        self.dict_process_lock.release()
 
     def run_test(self):
         """
@@ -71,12 +80,12 @@ class TestTemplate:
         :rtype: internal_io.test_status
         """
         return internal_io.test_status(
-            self.name(),
-            self.status_code,
-            self.status,
-            self.failure_dict,
-            self.new_data,
-            self.progress
+            name=self.name(),
+            status=self.status_code,
+            message=self.status,
+            failure_dict=self.failure_dict,
+            data=self.new_data,
+            progress=self.progress,
         )
 
     @staticmethod
@@ -139,7 +148,7 @@ class TestTemplate:
 
 
 class TestWalkTemplate(TestTemplate):
-    def __init__(self, args, agnpath, test_data, queue, queue_lock):
+    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
         """
         Simple test template.
         :param args: List of arguments
@@ -149,7 +158,7 @@ class TestWalkTemplate(TestTemplate):
         :param test_data: The data to be tested
         :type test_data: str
         """
-        super().__init__(args, agnpath, test_data, queue, queue_lock)
+        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
         if test_data is None:
             self.set_status("problem", "No test data given.")
 
