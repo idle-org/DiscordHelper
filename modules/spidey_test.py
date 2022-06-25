@@ -1,14 +1,16 @@
 import asyncio
 import os
+import time
+
 from modules import test_template
 
 
 class SpideyTest(test_template.TestTemplate):
-    def __init__(self, args, agnpath, test_data, queue, queue_lock):
+    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
         """
         Simple test runner, for testing the detection of Spidey viruses.
         """
-        super().__init__(args, agnpath, test_data, queue, queue_lock)
+        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
 
     def run_test(self):
         """
@@ -18,7 +20,7 @@ class SpideyTest(test_template.TestTemplate):
         :rtype: bool
         """
         self.set_status("running")
-        # self.slowdown()  # This function is only used for testing
+
         paths = self.get_path()
         self.is_infected = False
         lines = 0
@@ -28,7 +30,10 @@ class SpideyTest(test_template.TestTemplate):
         if lines > 1:
             self.is_infected = True
 
+        self.progress = 50
+        # time.sleep(5)
         lines = 0
+
         with open(os.path.join(paths[1], "index.js")) as f:
             for line in f:
                 lines += 1  # TODO: you don't actually need to count the lines, you can just check if it's more than 1
@@ -43,6 +48,7 @@ class SpideyTest(test_template.TestTemplate):
                   "If you've recently downloaded a .exe directly sent from someone, "
                   "do also consider a clean windows reinstall.")
 
+        self.progress = 100
         return self.finish("success")
 
     def get_path(self):
