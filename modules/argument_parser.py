@@ -27,7 +27,7 @@ def parse(_args):
     parser.add_argument("--database", "--db", type=str, help="Alternative database for the analysis")
     parser.add_argument("--pollrate", "--poll", default=0.1, type=float, help="Refresh rate of the status, 0.1 is the default")
     parser.add_argument("--printrate", "-refresh", default=5, type=int, help="Print the tests every X seconds")
-    parser.add_argument("--size", "--window-size", default=90, type=int, help="Size of the message window")
+    parser.add_argument("--size", "--window-size", default=120, type=int, help="Size of the message window")
     # Tests
     parser.add_argument('--spidey', action='store_true', help='Runs the spidey test')
     parser.add_argument('--line-count', action='store_true', help='Test all known files for line count')

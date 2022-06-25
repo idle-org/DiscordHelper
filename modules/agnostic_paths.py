@@ -40,13 +40,13 @@ class AgnosticPaths:
         platform = sys.platform
         if platform.startswith('win'):
             self.os = 'windows'
-            self.default_database = 'windows_base'
+            self.default_database = 'databases/windows_base.json'
         elif platform.startswith('linux'):
             self.os = 'linux'
-            self.default_database = 'linux_base'
+            self.default_database = 'databases/linux_base.json'
         elif platform.startswith('darwin'):
             self.os = 'mac'
-            self.default_database = 'mac_base'
+            self.default_database = 'databases/mac_base.json'
         else:
             raise OSError("This script can only check for Spideys on Windows, Linux and Mac.")
         return self.os
@@ -67,16 +67,16 @@ class AgnosticPaths:
                 if os.path.exists(ptb_path):
                     self.ptb = "PTB"
                     self.args.ptb = "PTB"
-                    self.default_database = "windows_ptb"
+                    self.default_database = "databases/windows_ptb.json"
                     return ptb_path
                 else:
-                    self.default_database = "windows_base"
+                    self.default_database = "databases/windows_base.json"
                     return base_path
             if self.ptb == 'PTB':
-                self.default_database = "windows_base"
+                self.default_database = "databases/windows_bas.jsone"
                 return base_path+"PTB"
             else:
-                self.default_database = "windows_ptb"
+                self.default_database = "databases/windows_ptb.json"
                 return base_path  # Try to find the default version
         elif self.os == 'linux':
             return os.path.join("/", "opt", "discord")

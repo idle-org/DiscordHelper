@@ -20,6 +20,7 @@ os.system('color')
 _TEST_MODULES = {
     "spidey": ["spidey_test", "SpideyTest"],
     # "test_walk": ["test_template", "TestWalkTemplate"],
+    "size_test": ["size_test", "SizeTest"],
 }
 
 PROGRAM_VERSION = "1.0.0"
@@ -95,16 +96,27 @@ class TestRunner:
         """
         Opens the base data file
         """
-        print(self.args.database)
+        default_database = resource_path(self.agnostic_path.default_database)
+        if not self.args.database:
+            self.args.database = default_database
         if os.path.exists(self.args.database):
             with open(resource_path(self.args.database), "r") as f:
-                db_data = f.read()
-                # print(db_data)
-        else: # Try opening the default database
-            print(colored("\n > The database file does not exist, trying to open the default one...\n", "yellow"))
-            with open(resource_path('databases/windows_base.json'), "r") as f:
-                db_data = f.read()
-                # print(db_data)
+                self.base_data = json.load(f)
+
+        elif os.path.exists(default_database):  # Try opening the default database
+            # print(colored(
+            #     "\n > The database file specified does not exist, "
+            #     "trying to open the default one for your os...\n", "yellow"
+            # ))
+            with open(resource_path(default_database), "r") as f:
+                self.base_data = json.load(f)
+
+        else:
+            print(colored(
+                "\n > The database file does not exist, and the default "
+                "one for your os does not exist either.\n", "red"
+            ))
+            self.base_data = {}
 
     def update_module_list(self):
         """

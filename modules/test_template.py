@@ -51,6 +51,7 @@ class TestTemplate:
         self.dict_process_lock.acquire()
         self.dict_process[self.name()] = self
         self.dict_process_lock.release()
+        self.init_test_data()
 
     def run_test(self):
         """
@@ -59,6 +60,11 @@ class TestTemplate:
         """
         self.set_status("running", "The test will begin shortly, please wait...")
         self.set_status("sucess", "The test was a success but kinda not a success.")
+
+    def init_test_data(self):
+        if self.test_data is None and not self.args.continue_on_error:
+            self.set_status("problem", "No test data given.")
+            return self.finish()
 
     def name(self):
         """
@@ -159,8 +165,8 @@ class TestWalkTemplate(TestTemplate):
         :type test_data: str
         """
         super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
-        if test_data is None:
-            self.set_status("problem", "No test data given.")
+        # if test_data is None:
+        #     self.set_status("problem", "No test data given.")
 
     def add_test_result(self, path, testname, result):
         """
@@ -217,13 +223,7 @@ class TestWalkTemplate(TestTemplate):
         """
         self.set_status("running", "The test will begin shortly, please wait...")
 
-        if self.test_data is None and not self.args.continue_on_error:
-            self.set_status("problem", "No test data given.")
-            return self.finish()
-
-        self.set_status("running", "The test will begin shortly, please wait...")
         for path in self.walk():
-            print(path)
             if not self.compare(path, "test", lambda x: True, [], {}):
                 self.add_failure(path, f"Test {self.name()} failed on {path}")
                 if not self.args.continue_on_error:
@@ -245,7 +245,7 @@ class TestWalkTemplate(TestTemplate):
         """
         return self.agnostic_path.walk_all_files(self.agnostic_path())
 
-    def compare(self, path, entry_name, function, args, kwargs):
+    def compare(self, path, entry_name, function, args, kwargs, cmp_function=None):
         """
         Use the function on the given path, with given arguments and compare it with the entry in the test data.
         :param path: Path to the file or directory
@@ -258,6 +258,8 @@ class TestWalkTemplate(TestTemplate):
         :type args: list
         :param kwargs: Keyword arguments to use on the function
         :type kwargs: dict
+        :param cmp_function: Function compare both results
+        :type cmp_function: function
         """
 
         data_origin = self.add_test_result(path, entry_name, function(path, *args, **kwargs))
@@ -266,7 +268,12 @@ class TestWalkTemplate(TestTemplate):
             self.set_status("problem", f"No expected data found for {path}")
             return False
 
-        if data_origin != expected_data:
+        if cmp_function is None:
+            if data_origin == expected_data:
+                return True
             return False
-        return True
+        else:
+            if cmp_function(data_origin, expected_data):
+                return True
+            return False
 
