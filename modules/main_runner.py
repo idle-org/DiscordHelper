@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import sys
 import importlib
 import threading
@@ -216,6 +217,8 @@ class TestRunner:
                 if RUN_OVER:
                     if POST_RUN_ALLOWED and self.is_infected == 0:  # Second part is redundant
                         print(colored("\n  > Running post test runner...", "green"))
+                        if self.agnostic_path.os == "windows":
+                            subprocess.Popen([self.agnostic_path.main_path + f"\\Discord{self.agnostic_path.ptb}.exe"])
                         return 0
                     return 1
                 time.sleep(0.1)
