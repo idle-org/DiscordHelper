@@ -11,16 +11,18 @@ class AgnosticPaths:
     An agnostic path object, containing all methods to access the files and folders in a standard discord install
     """
     
-    def __init__(self, ptb, force_path=""):
+    def __init__(self, args):
         """
-        :param ptb: Whether the discord is a public beta install (ptb="PTB") or not (ptb="")
-        :type ptb: str
-        :param forced_path: An alternative discord install path, usefull to test the script on a non standard install
-        :type forced_path: str
+        :param args: The arguments passed to the script
+        :type args: argparse.Namespace
         """
-        self.ptb = ptb
+        self.args = args
+        self.ptb = args.ptb
         self.os = self.get_os()
-        self.force_path = force_path[0]
+        if args.force_path is not None:
+            self.force_path = args.force_path[0]
+        else:
+            self.force_path = None
         self.main_path = self._get_path()
         self.version = self.get_version()
         self._update_path()
@@ -47,15 +49,27 @@ class AgnosticPaths:
 
     def _get_path(self):
         """
-        Return the base path of the install, note that the self.main_path is not returned, 
+        Return the base path of the install, note that the self.main_path is not returned,
         and this method is meant to be used at init only
-        :return: Base path of the install (minus the version on windows)
+        :return: Base path of the install (minus the version on Windows)
         :rtype: str
         """
-        if self.force_path != "":
+        if self.force_path is not None:
             return self.force_path
         if self.os == 'windows':
-            return os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord{self.ptb}")
+            base_path = os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord")
+            ptb_path = base_path+"PTB"
+            if self.args.autodetect:
+                if os.path.exists(ptb_path):
+                    self.ptb = "PTB"
+                    self.args.ptb = "PTB"
+                    return ptb_path
+                else:
+                    return base_path
+            if self.ptb == 'PTB':
+                return base_path+"PTB"
+            else:
+                return base_path+"PTB"  # Try to find the PTB version
         elif self.os == 'linux':
             return os.path.join("/", "opt", "discord")
             # return os.path.join("usr","share","discord")
@@ -141,6 +155,17 @@ class AgnosticPaths:
         :rtype: str
         """
         return self.main_path
+
+    def walk_all_files(self, *args):
+        """
+        Walks all files in the given path
+        :param args: The path
+        :return: A list of all files in the given path
+        :rtype: list[str]
+        """
+        return [os.path.join(dirpath, filename)
+                for dirpath, dirnames, filenames in os.walk(self(*args))
+                for filename in filenames]
     
     def __repr__(self):
         """
@@ -155,13 +180,3 @@ class AgnosticPaths:
         :rtype: str
         """
         return self.main_path
-
-
-if __name__ == '__main__':
-    path = AgnosticPaths("")
-    print(path)
-    print(path.version)
-    print(path.list())
-    print(path())
-    print(path("resources", "bootstrap"))  # Return the main_path plus resources, bootstrap
-    print(path.list_dir_files("resources", "bootstrap"))  # List the base_path/resources/bootstrap and return [[folders], [files]]
