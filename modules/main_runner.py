@@ -85,9 +85,26 @@ class TestRunner:
         self.dict_of_processes = {}  # To get a more granular view of the processes
         self.update_module_list()
 
+        self.base_data = {}
         self.finished_tests = deque()
 
+        self.open_base_data()
         self.exec_all_tests()
+
+    def open_base_data(self):
+        """
+        Opens the base data file
+        """
+        print(self.args.database)
+        if os.path.exists(self.args.database):
+            with open(resource_path(self.args.database), "r") as f:
+                db_data = f.read()
+                # print(db_data)
+        else: # Try opening the default database
+            print(colored("\n > The database file does not exist, trying to open the default one...\n", "yellow"))
+            with open(resource_path('databases/windows_base.json'), "r") as f:
+                db_data = f.read()
+                # print(db_data)
 
     def update_module_list(self):
         """
@@ -114,8 +131,6 @@ class TestRunner:
     def exec_all_tests(self):
         """
         Executes all the tests, get their result as they finishes
-        :return: The number of test ran, success, failures, skipped (with ran = success+failures+skip)
-        :rtype: (int,int,int,int) # TODO: Change this to a nametuple
         """
         self.list_of_tests = []
         for module_name, test_class in self.loaded_test_classes.items():
@@ -151,7 +166,6 @@ class TestRunner:
         tc.daemon = True
         tc.start()
 
-        return self.is_infected, self.detections, self.test_run
 
     def controller_test(self):
         """
@@ -387,6 +401,16 @@ def run_check(args, agnpath):
     sys.exit(tr.get_exit_code())
 
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
+
 def print_final_status(testrunner, start_time, args):
     """
     Prints the final status
@@ -399,10 +423,41 @@ def print_final_status(testrunner, start_time, args):
         color = "red"
         print(INFECTED_CODE)
     print(colored(f"\nThe test sequence is now finished, DiscordHelper ran for {round(time.time() - start_time,2)} seconds", color))
-    print_status(status, start_time)
-
+    SIZE = args.size
+    for test, test_object in testrunner.dict_of_processes.items():
+        if test_object.status_code == "success":
+            print(colored(f"  > {fill_it(SIZE,test,'SUCCESS')}", "green"))
+        elif test_object.status_code == "failure":
+            print(colored(f"  > {fill_it(SIZE,test,'FAILURE')}", "red"))
+            print(colored(f"{fit_it_under(test_object.status ,SIZE-3, '    > ')}", "red"))
+        else:
+            print(colored(f"  > {test} {fill_it(SIZE,test,test_object.status_code.upper())}", "yellow"))
     msg_error = "sucessfully" if status.tests_failed == 0 else f"with {status.tests_error} errors"
     print(colored(f"\nThe program executed {msg_error}, exiting in {args.timeout} seconds...", color))
+
+
+def fill_it(size, string1, string2):
+    """
+    Fills a string with a character
+    """
+    return string1 + max(size - len(string1)-len(string2), 0) * "." + string2
+
+
+def fit_it_under(message, size, start_line=""):
+    """
+    Fits a message under a size
+    """
+    final_message = ""
+    for line in message.split('\n'):
+        if len(line) > size:
+            final_message += start_line + line[:size] + "\n"
+            final_message += fit_it_under(line[size:], size, start_line)
+        else:
+            final_message += start_line + line + "\n"
+    #     final_message += start_line + line + '\n'
+    # if len(message) > size:
+    #     return message[:size-3] + "..."
+    return final_message
 
 
 def gen_save_data(args, test_runner):
@@ -416,7 +471,7 @@ def gen_save_data(args, test_runner):
     if not os.path.exists(folder):
         print(colored("  > Making folder...", "blue"))
         os.makedirs(folder)
-    print(colored(f"  > Exporting the test data to {file_path}", "blue"))  # TODO : Advertize where the data is exported
+    print(colored(f"  > Exporting the test data to {file_path}", "blue"))
     main_data = export_data(test_runner, data)
     # print(main_data)
     with open(file_path, "w") as f:
