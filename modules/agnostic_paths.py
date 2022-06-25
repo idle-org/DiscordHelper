@@ -73,10 +73,10 @@ class AgnosticPaths:
                     self.default_database = "databases/windows_base.json"
                     return base_path
             if self.ptb == 'PTB':
-                self.default_database = "databases/windows_bas.jsone"
+                self.default_database = "databases/windows_ptb.jsone"
                 return base_path+"PTB"
             else:
-                self.default_database = "databases/windows_ptb.json"
+                self.default_database = "databases/windows_base.json"
                 return base_path  # Try to find the default version
         elif self.os == 'linux':
             return os.path.join("/", "opt", "discord")
