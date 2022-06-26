@@ -7,7 +7,7 @@ import threading
 import time
 from collections import deque
 
-from modules.internal_io import global_status
+from modules.internal_io import global_status, thread_parameters
 from modules import size_test, adler_test # noqa # Used to force import of modules by pyinstaller
 
 """
@@ -106,6 +106,14 @@ class TestRunner:
 
         self.open_base_data()
         self.exec_all_tests()
+
+    def update_threat(self, threat_level):
+        """
+        Updates the threat level
+        :param threat_level: The new threat level
+        :type threat_level: int
+        """
+        threat_level = max(threat_level, self.threat_level)
 
     def open_base_data(self):
         """
@@ -215,16 +223,17 @@ class TestRunner:
         self.list_of_tests = []
         for module_name, test_class in self.loaded_test_classes.items():
             print(colored(f"  > Starting test {module_name}...", "blue"))
-            tc = test_class(
+            tc = test_class(thread_parameters(
                 self.args,
                 self.agnostic_path,
                 self.base_data,
                 self.finished_tests,
                 queue_lock,
                 self.dict_of_processes,
-                processes_lock
-            )
-            tc = threading.Thread(target=tc.run_test, args=())
+                processes_lock,
+                self.bad_database,
+            ))
+            tc = threading.Thread(target=tc.run, args=())
             tc.name = str(module_name)
             tc.daemon = True
             self.list_of_tests.append(tc)

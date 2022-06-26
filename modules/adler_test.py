@@ -20,11 +20,11 @@ def apply_adler(path):
 
 
 class AdlerTest(test_template.TestWalkTemplateNoLogs):
-    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
+    def __init__(self, thread_parameters):
         """
         Simple test runner, compare adler32 to known good values.
         """
-        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
+        super().__init__(thread_parameters)
 
     def run_test(self):
         self.set_status("running")

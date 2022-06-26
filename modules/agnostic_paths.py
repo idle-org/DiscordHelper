@@ -4,7 +4,7 @@ The agnostic path handler, gives all methods to access all paths of the discord 
 import os
 import re
 import sys
-
+import random
 
 class AgnosticPaths:
     """
@@ -27,6 +27,9 @@ class AgnosticPaths:
         self.main_path = self._get_path()
         self.version = self.get_version()
         self._update_path()
+        self.all_files = self.walk_all_files()
+        random.shuffle(self.all_files)
+        self.size = len(self.all_files)
 
     def get_os(self):
         """

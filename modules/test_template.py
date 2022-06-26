@@ -13,45 +13,58 @@ class TestDataError(Exception):
 
 
 class TestTemplate:
-    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
+    def __init__(self, thread_parameters: internal_io.thread_parameters):
         """
         Simple test template.
-        :param args: List of arguments
-        :type args: argparse.Namespace
-        :param agnpath: The path to the discord folder
-        :type agnpath: agnostic_path.AgnosticPath
-        :param test_data: The data to be tested
-        :type test_data: dict
-        :param queue: The queue to put the test status in
-        :type queue: queue.deque
-        :param queue_lock: The lock to use when putting the test status in the queue
-        :type queue_lock: threading.Lock
-        :param dict_process: The dictionary of processes
-        :type dict_process: dict
-        :param dict_process_lock: The lock to use when putting the process in the dictionary
-        :type dict_process_lock: threading.Lock
+        :param thread_parameters.args: List of arguments
+        :type thread_parameters.args: argparse.Namespace
+        :param thread_parameters.agnpath: The path to the discord folder
+        :type thread_parameters.agnpath: agnostic_path.AgnosticPath
+        :param thread_parameters.test_data: The data to be tested
+        :type thread_parameters.test_data: dict
+        :param thread_parameters.queue: The queue to put the test status in
+        :type thread_parameters.queue: queue.deque
+        :param thread_parameters.queue_lock: The lock to use when putting the test status in the queue
+        :type thread_parameters.queue_lock: threading.Lock
+        :param thread_parameters.dict_process: The dictionary of processes
+        :type thread_parameters.dict_process: dict
+        :param thread_parameters.dict_process_lock: The lock to use when putting the process in the dictionary
+        :type thread_parameters.dict_process_lock: threading.Lock
+        :param thread_parameters.bad_database: Whether the database was sucessfully loaded and contains valid data
+        :type thread_parameters.bad_database: bool
         """
-        self.args = args
-        self.ptb = args.ptb
-        self.agnostic_path = agnpath
-        self.os_name = agnpath.os
-        self.main_path = agnpath.main_path
-        self.test_data = test_data
+        self.args = thread_parameters.args
+        self.ptb = thread_parameters.args.ptb
+        self.agnostic_path = thread_parameters.agnpath
+        self.os_name = thread_parameters.agnpath.os
+        self.main_path = thread_parameters.agnpath.main_path
+        self.test_data = thread_parameters.test_data
         self.is_infected = False
         self.status_code = "idle"
         self.status = "Test not yet initialized."
-        self.queue = queue
+        self.queue = thread_parameters.queue
         self.set_status("idle")
-        self.queue_lock = queue_lock
+        self.queue_lock = thread_parameters.queue_lock
         self.failure_dict = {}
         self.new_data = {}
         self.progress = 0
-        self.dict_process = dict_process
-        self.dict_process_lock = dict_process_lock
+        self.dict_process = thread_parameters.dict_process
+        self.dict_process_lock = thread_parameters.dict_process_lock
+        self.bad_database = thread_parameters.bad_database
         self.dict_process_lock.acquire()
         self.dict_process[self.name()] = self
         self.dict_process_lock.release()
         self.init_test_data()
+
+    def run(self):
+        """
+        Runs the test.
+        """
+        try:
+            self.run_test()
+        except Exception as e:
+            self.set_status("problem", str(e))
+            return self.finish()
 
     def run_test(self):
         """
@@ -154,17 +167,11 @@ class TestTemplate:
 
 
 class TestWalkTemplate(TestTemplate):
-    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
+    def __init__(self, thread_parameters):
         """
         Simple test template.
-        :param args: List of arguments
-        :type args: argparse.Namespace
-        :param agnpath: The path to the discord folder
-        :type agnpath: agnostic_path.AgnosticPath
-        :param test_data: The data to be tested
-        :type test_data: str
         """
-        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
+        super().__init__(thread_parameters)
         self.to_skip = []
 
     def add_test_result(self, path, testname, result):
@@ -234,7 +241,10 @@ class TestWalkTemplate(TestTemplate):
                     return self.finish()
 
         if len(self.failure_dict) > 0:
-            self.set_status("failure", f"Test {self.name()} failed on {len(self.failure_dict)} files.")
+            if self.bad_database:
+                self.set_status("unknown", f"Test {self.name()} failed on {len(self.failure_dict)} files")
+            else:
+                self.set_status("failure", f"Test {self.name()} failed on {len(self.failure_dict)} files.")
         else:
             self.set_status("success", f"Test {self.name()} passed.")
 
@@ -286,15 +296,9 @@ class TestWalkTemplate(TestTemplate):
 
 
 class TestWalkTemplateNoLogs(TestWalkTemplate):
-    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
+    def __init__(self, thread_parameters):
         """
         Simple test template.
-        :param args: List of arguments
-        :type args: argparse.Namespace
-        :param agnpath: The path to the discord folder
-        :type agnpath: agnostic_path.AgnosticPath
-        :param test_data: The data to be tested
-        :type test_data: str
         """
-        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
+        super().__init__(thread_parameters)
         self.to_skip = [r"modules\discord_dispatch-1\discord_dispatch\dispatch.log"]

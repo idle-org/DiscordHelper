@@ -4,11 +4,11 @@ from modules import test_template
 
 
 class SpideyTest(test_template.TestTemplate):
-    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
+    def __init__(self, thread_parameters):
         """
         Simple test runner, for testing the detection of Spidey viruses.
         """
-        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
+        super().__init__(thread_parameters)
 
     def run_test(self):
         """

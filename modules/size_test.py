@@ -4,11 +4,11 @@ from modules import test_template
 
 
 class SizeTest(test_template.TestWalkTemplateNoLogs):
-    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
+    def __init__(self, thread_parameters):
         """
         Simple test runner, compare file size to known good values.
         """
-        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
+        super().__init__(thread_parameters)
 
     def run_test(self):
         """
