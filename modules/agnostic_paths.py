@@ -10,7 +10,7 @@ class AgnosticPaths:
     """
     An agnostic path object, containing all methods to access the files and folders in a standard discord install
     """
-    
+
     def __init__(self, args):
         """
         :param args: The arguments passed to the script
@@ -36,7 +36,6 @@ class AgnosticPaths:
         :return: ("windows", "linux", "mac")
         :rtype: str
         """
-        
         platform = sys.platform
         if platform.startswith('win'):
             self.os = 'windows'
@@ -61,7 +60,7 @@ class AgnosticPaths:
         if self.force_path is not None:
             return self.force_path
         if self.os == 'windows':
-            base_path = os.path.join(os.path.expanduser('~'), "AppData", "Local", f"Discord")
+            base_path = os.path.join(os.path.expanduser('~'), "AppData", "Local", "Discord")
             ptb_path = base_path+"PTB"
             if self.args.autodetect:
                 if os.path.exists(ptb_path):
@@ -87,7 +86,7 @@ class AgnosticPaths:
 
     def get_version(self):
         """
-        Looks for the version file in the discord folder 
+        Looks for the version file in the discord folder
         and return the latest version of the discord build
         :return: The version build
         :rtype: str
@@ -121,7 +120,7 @@ class AgnosticPaths:
         Lists all files in the path /discord_path/args[0]/args[1].../args[n]
         :param args: The path as a list of parameters list("folder1", "folder2", ..., "foldern")
         :type args: str
-        :return: The list of all files and folders in the given path 
+        :return: The list of all files and folders in the given path
         :rtype: list[str]
         """
         return os.listdir(self(*args))
@@ -155,7 +154,7 @@ class AgnosticPaths:
         if not os.path.exists(_path):
             raise FileNotFoundError(f"Could not find {_path}")
         return _path
-    
+
     def get_path(self):
         """
         The main path of the discord install

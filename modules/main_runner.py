@@ -34,16 +34,16 @@ queue_lock = threading.Lock()
 processes_lock = threading.Lock()
 
 CLEAR_CODE = colored(r"""
- _______ _                    
-(_______) |                   
- _      | | _____ _____  ____ 
+ _______ _
+(_______) |
+ _      | | _____ _____  ____
 | |     | || ___ (____ |/ ___)
-| |_____| || ____/ ___ | |    
+| |_____| || ____/ ___ | |
  \______)\_)_____)_____|_|
  """, 'green')
 
 INFECTED_CODE = colored(r"""
- _         ___                             _ 
+ _         ___                             _
 | |       / __)              _            | |
 | |____ _| |__ _____  ____ _| |_ _____  __| |
 | |  _ (_   __) ___ |/ ___|_   _) ___ |/ _  |
@@ -51,12 +51,21 @@ INFECTED_CODE = colored(r"""
 |_|_| |_||_|  |_____)\____)  \__)_____)\____|
 """, 'red')
 
+UNKNOWN_CODE = colored(r"""
+ _     _       _
+(_)   (_)     | |
+ _     _ ____ | |  _ ____   ___  _ _ _ ____
+| |   | |  _ \| |_/ )  _ \ / _ \| | | |  _ \
+| |___| | | | |  _ (| | | | |_| | | | | | | |
+ \_____/|_| |_|_| \_)_| |_|\___/ \___/|_| |_|
+""", 'yellow')
+
 LOGO = colored(r"""
-  __ \  _)                              |  |   |        |                    
-  |   |  |   __|   __|   _ \    __|  _` |  |   |   _ \  |  __ \    _ \   __| 
-  |   |  | \__ \  (     (   |  |    (   |  ___ |   __/  |  |   |   __/  |    
- ____/  _| ____/ \___| \___/  _|   \__,_| _|  _| \___| _|  .__/  \___| _|    
-                                                          _|   
+  __ \  _)                              |  |   |        |
+  |   |  |   __|   __|   _ \    __|  _` |  |   |   _ \  |  __ \    _ \   __|
+  |   |  | \__ \  (     (   |  |    (   |  ___ |   __/  |  |   |   __/  |
+ ____/  _| ____/ \___| \___/  _|   \__,_| _|  _| \___| _|  .__/  \___| _|
+                                                          _|
 """, "cyan")
 
 
@@ -79,8 +88,11 @@ class TestRunner:
         self.version = agnpath.version
         self.start_time = start_time
 
-        self.is_infected = 0
-        self.detections = 0
+        self.is_infected = 0  # Only set to 1 if the certainty is high enough
+        self.is_unknown = 0  # Unknown if the file is infected or not
+        self.threat_level = 0  # The threat level of the infection, 0 is the lowest, can only be increased
+        self.errors = 0
+        self.bad_database = False  # Set to true if the database is not valid
         self.test_run = {}
 
         self.loaded_test_modules = {}
@@ -108,6 +120,7 @@ class TestRunner:
             print(colored(f" > Opening specified database {self.args.database}", "green"))  # TODO : Only if verbose
             with open(self.args.database, "r") as f:
                 self.base_data = json.load(f)
+                self.check_database()
             return self.base_data
         elif os.path.exists(resource_path(default_database)):  # Try opening the default database
             print(colored(
@@ -116,6 +129,7 @@ class TestRunner:
             ))
             with open(resource_path(default_database), "r") as f:
                 self.base_data = json.load(f)
+                self.check_database()
             return self.base_data
 
         else:
@@ -125,6 +139,52 @@ class TestRunner:
             ))
             self.base_data = {}
             return self.base_data
+
+    def check_database(self):
+        """
+        Check if the database is valid set self.bad_database to True if it is not
+        """
+        if not self.base_data:
+            print(colored(" > The database is empty", "red"))
+            self.bad_database = True
+            return False
+
+        if "global" not in self.base_data:
+            print(colored(" > The database is missing the global section", "red"))
+            self.bad_database = True
+        else:
+            if "discord_version" not in self.base_data["global"]:
+                print(colored(" > The database is missing a version field", "red"))
+                self.bad_database = True
+            else:
+                if self.base_data["global"]["discord_version"] != self.version:
+                    print(colored(
+                        f" > The database is from a different version ({self.base_data['global']['discord_version']}),"
+                        f" you are using {self.version}", "red"
+                    ))
+                    self.bad_database = True
+            if "ptb" not in self.base_data["global"]:
+                print(colored(" > The database is missing a ptb field", "red"))
+                self.bad_database = True
+            else:
+                if self.base_data["global"]["ptb"] != self.ptb:
+                    print(colored(
+                        f' > The database is for Discord {self.base_data["global"]["ptb"]} '
+                        f'you are using Discord{self.ptb}', "red"
+                    ))
+                    self.bad_database = True
+            if "os" not in self.base_data["global"]:
+                print(colored(" > The database is missing an os field", "red"))
+                self.bad_database = True
+            else:
+                if self.base_data["global"]["os"] != self.os_name:
+                    print(colored(
+                        f" > The database is for {self.base_data['global']['os']}, you are using {self.os_name}", "red"
+                    ))
+                    self.bad_database = True
+        if "tests" not in self.base_data:
+            print(colored(" > The database is missing the test results", "red"))
+            self.bad_database = True
 
     def update_module_list(self):
         """
@@ -204,7 +264,7 @@ class TestRunner:
             except KeyboardInterrupt:
                 RUN_OVER = True
                 return
-            except:
+            except Exception:
                 sys.exit()
 
     def post_test_runner(self):
@@ -443,7 +503,10 @@ def print_final_status(testrunner, start_time, args):
     else:
         color = "red"
         print(INFECTED_CODE)
-    print(colored(f"\nThe test sequence is now finished, DiscordHelper ran for {round(time.time() - start_time,2)} seconds", color))
+    print(colored(
+        f"\nThe test sequence is now finished, DiscordHelper ran for "
+        f"{round(time.time() - start_time,2)} seconds", color
+    ))
     SIZE = args.size
     for test, test_object in testrunner.dict_of_processes.items():
         if test_object.status_code == "success":

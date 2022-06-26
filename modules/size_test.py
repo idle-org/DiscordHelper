@@ -1,6 +1,4 @@
-import asyncio
 import os
-import time
 
 from modules import test_template
 
@@ -32,7 +30,10 @@ class SizeTest(test_template.TestWalkTemplateNoLogs):
                                  f"({res} b) not ({self.get_expected_result(path, 'size')} b).\n"
                     self.is_infected = True
                     if not self.args.continue_on_error:
-                        return self.finish("failure", f"{short_path} is supposed to be {self.get_expected_result(path, 'size')} bytes, but it is {os.path.getsize(path)} bytes.")
+                        return self.finish(
+                            "failure",
+                            f"{short_path} is supposed to be {self.get_expected_result(path, 'size')}"
+                            f" bytes, but it is {os.path.getsize(path)} bytes.")
 
         self.progress = 100
         if self.is_infected:
@@ -41,4 +42,3 @@ class SizeTest(test_template.TestWalkTemplateNoLogs):
                 error_msg
             )
         return self.finish("success", "Your discord is not infected.")
-

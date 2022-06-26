@@ -41,7 +41,11 @@ class AdlerTest(test_template.TestWalkTemplateNoLogs):
                                  f"({res}) not ({self.get_expected_result(path, 'adler32')} b).\n"
                     self.is_infected = True
                     if not self.args.continue_on_error:
-                        return self.finish("failure", f"{short_path} is supposed to be {self.get_expected_result(path, 'adler32')} bytes, but it is {adler32(open(path, 'rb').read())} bytes.")
+                        return self.finish(
+                            "failure",
+                            f"{short_path} is supposed to be {self.get_expected_result(path, 'adler32')} "
+                            f"bytes, but it is {adler32(open(path, 'rb').read())} bytes."
+                        )
 
         self.progress = 100
         if self.is_infected:
