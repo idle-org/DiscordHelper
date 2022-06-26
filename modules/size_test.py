@@ -9,6 +9,7 @@ class SizeTest(test_template.TestWalkTemplateNoLogs):
         Simple test runner, compare file size to known good values.
         """
         super().__init__(thread_parameters)
+        self.is_unknown = False
 
     def run_test(self):
         """
@@ -17,7 +18,8 @@ class SizeTest(test_template.TestWalkTemplateNoLogs):
         :rtype: bool
         """
         self.set_status("running")
-        size = len(self.walk())
+        size = self.agnostic_path.size
+
         error_msg = ""
         for i, path in enumerate(self.walk()):
             self.progress = int(100*i/size)
@@ -28,17 +30,31 @@ class SizeTest(test_template.TestWalkTemplateNoLogs):
                     self.add_failure(path, f"Test {self.name()} failed on {short_path}")
                     error_msg += f"{short_path} is " \
                                  f"({res} b) not ({self.get_expected_result(path, 'size')} b).\n"
-                    self.is_infected = True
-                    if not self.args.continue_on_error:
-                        return self.finish(
-                            "failure",
-                            f"{short_path} is supposed to be {self.get_expected_result(path, 'size')}"
-                            f" bytes, but it is {os.path.getsize(path)} bytes.")
+                    # print(self.bad_database)
+                    if not self.bad_database:
+                        self.is_infected = True
+                        if not self.args.continue_on_error:
+                            return self.finish(
+                                "failure",
+                                f"{short_path} is supposed to be {self.get_expected_result(path, 'size')}"
+                                f" bytes, but it is {os.path.getsize(path)} bytes.")
+                    else:
+                        self.is_unknown = True
+                        if not self.args.continue_on_error:
+                            return self.finish(
+                                "problem",
+                                f"{short_path} is supposed to be {self.get_expected_result(path, 'size')}"
+                                f" bytes, but it is {os.path.getsize(path)} bytes.")
 
         self.progress = 100
         if self.is_infected:
             return self.finish(
                 "failure",
+                error_msg
+            )
+        elif self.is_unknown:
+            return self.finish(
+                "problem",
                 error_msg
             )
         return self.finish("success", "Your discord is not infected.")

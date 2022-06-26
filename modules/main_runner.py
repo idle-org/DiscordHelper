@@ -113,7 +113,7 @@ class TestRunner:
         :param threat_level: The new threat level
         :type threat_level: int
         """
-        threat_level = max(threat_level, self.threat_level)
+        self.threat_level = max(threat_level, self.threat_level)
 
     def open_base_data(self):
         """
@@ -145,6 +145,7 @@ class TestRunner:
                 "\n > The database file does not exist, and the default "
                 "one for your os does not exist either.\n", "red"
             ))
+            self.bad_database = True
             self.base_data = {}
             return self.base_data
 
@@ -224,14 +225,14 @@ class TestRunner:
         for module_name, test_class in self.loaded_test_classes.items():
             print(colored(f"  > Starting test {module_name}...", "blue"))
             tc = test_class(thread_parameters(
-                self.args,
-                self.agnostic_path,
-                self.base_data,
-                self.finished_tests,
-                queue_lock,
-                self.dict_of_processes,
-                processes_lock,
-                self.bad_database,
+                args=self.args,
+                agnpath=self.agnostic_path,
+                test_data=self.base_data,
+                queue=self.finished_tests,
+                queue_lock=queue_lock,
+                dict_process=self.dict_of_processes,
+                dict_process_lock=processes_lock,
+                bad_database=self.bad_database,
             ))
             tc = threading.Thread(target=tc.run, args=())
             tc.name = str(module_name)
@@ -343,6 +344,7 @@ class TestRunner:
         nb_tests_success = 0
         nb_tests_failure = 0
         nb_tests_skipped = 0
+        nb_tests_error = 0
         progress = 0
         for test in self.finished_tests:
             if test.status == "success":
@@ -353,7 +355,7 @@ class TestRunner:
             elif test.status == "skipped":
                 nb_tests_skipped += 1
             elif test.status == "problem":
-                nb_tests_failure += 1
+                nb_tests_error += 1
             # progress += test.progress
         queue_lock.release()
 
@@ -361,7 +363,7 @@ class TestRunner:
             progress += test.progress
         progress = int(progress / nb_tests)
 
-        nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped
+        nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped + nb_tests_error
         nb_test_running = nb_tests - nb_tests_ran
         return global_status(
             tests_total=nb_tests,
@@ -370,7 +372,7 @@ class TestRunner:
             tests_failed=nb_tests_failure,
             tests_running=nb_test_running,
             tests_skipped=nb_tests_skipped,
-            tests_error=nb_tests_failure,
+            tests_error=nb_tests_error,
             progress=progress
         )
 
@@ -495,7 +497,7 @@ def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS  # noqa
+        base_path = sys._MEIPASS  # noqa # TODO: Detect if archive, likely with a ugly global check
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
@@ -506,12 +508,16 @@ def print_final_status(testrunner, start_time, args):
     Prints the final status
     """
     status = testrunner.get_status()
-    if status.tests_failed == 0:
+    if status.tests_failed == 0 and status.tests_error == 0:
         color = "green"
         print(CLEAR_CODE)
-    else:
+    elif status.tests_failed > 0:
         color = "red"
         print(INFECTED_CODE)
+    else:
+        color = "yellow"
+        print(UNKNOWN_CODE)
+
     print(colored(
         f"\nThe test sequence is now finished, DiscordHelper ran for "
         f"{round(time.time() - start_time,2)} seconds", color
@@ -522,12 +528,14 @@ def print_final_status(testrunner, start_time, args):
             print(colored(f"  > {fill_it(SIZE,test,'SUCCESS')}", "green"))
         elif test_object.status_code == "failure":
             print(colored(f"  > {fill_it(SIZE,test,'FAILURE')}", "red"))
-            error_message = fit_it_under(test_object.status, SIZE-3, '    > ')
-            if args.max_shown != -1:  # TODO : Correct this abomination
-                table = error_message.split("\n")
-                extra = [f"    > ... {len(table) - args.max_shown} more lines"] if len(table) > args.max_shown else []
-                error_message = "\n".join(table[:args.max_shown] + extra)
+            error_message = "\n".join(at_max_elements(
+                fit_it_under(test_object.status, SIZE-3, '    > '), args.max_shown, "     > ... "))
             print(colored(f"{error_message}", "red"))
+        elif test_object.status_code == "problem":
+            print(colored(f"  > {fill_it(SIZE,test,'PROBLEM')}", "yellow"))
+            error_message = "\n".join(at_max_elements(
+                fit_it_under(test_object.status, SIZE-3, '    > '), args.max_shown, "     > ... "))
+            print(colored(f"{error_message}", "yellow"))
         else:
             print(colored(f"  > {fill_it(SIZE,test,test_object.status_code.upper())}", "yellow"))
     msg_error = "sucessfully" if status.tests_failed == 0 else f"with {status.tests_error} errors"
@@ -541,20 +549,30 @@ def fill_it(size, string1, string2):
     return string1 + max(size - len(string1)-len(string2), 0) * "." + string2
 
 
+def at_max_elements(table, msize, fill):
+    """
+    Display at maximum msize elements, replace last with fill and return the table
+    """
+    if msize == -1:
+        return table
+
+    # if en(table) > lmsize:
+    table = table[:msize] + [
+        fill+"..."+str(len(table)-msize)+" more lines" if len(table) > msize else ""]
+    return table
+
+
 def fit_it_under(message, size, start_line=""):
     """
     Fits a message under a size
     """
-    final_message = ""
+    final_message = []
     for line in message.split('\n'):
         if len(line) > size:
-            final_message += start_line + line[:size] + "\n"
+            final_message += [start_line + line[:size]]
             final_message += fit_it_under(line[size:], size, start_line)
         else:
-            final_message += start_line + line + "\n"
-    #     final_message += start_line + line + '\n'
-    # if len(message) > size:
-    #     return message[:size-3] + "..."
+            final_message += [start_line + line]
     return final_message
 
 

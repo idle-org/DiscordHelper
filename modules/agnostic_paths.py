@@ -6,6 +6,7 @@ import re
 import sys
 import random
 
+
 class AgnosticPaths:
     """
     An agnostic path object, containing all methods to access the files and folders in a standard discord install

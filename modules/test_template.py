@@ -48,6 +48,7 @@ class TestTemplate:
         self.failure_dict = {}
         self.new_data = {}
         self.progress = 0
+        self.is_unknown = False
         self.dict_process = thread_parameters.dict_process
         self.dict_process_lock = thread_parameters.dict_process_lock
         self.bad_database = thread_parameters.bad_database
@@ -63,8 +64,8 @@ class TestTemplate:
         try:
             self.run_test()
         except Exception as e:
-            self.set_status("problem", str(e))
-            return self.finish()
+            self.add_failure("problem", "DISCORD HELPER:"+str(e))
+            return self.finish("problem", str(e))
 
     def run_test(self):
         """
@@ -253,10 +254,10 @@ class TestWalkTemplate(TestTemplate):
     def walk(self):
         """
         Walks the given path and returns a list of all files and directories.
-        :return: List of all files and directories
+        :return: List of all files
         :return:
         """
-        return self.agnostic_path.walk_all_files(self.agnostic_path())
+        return self.agnostic_path.all_files
 
     def compare(self, path, entry_name, function, args, kwargs, cmp_function=None):
         """
