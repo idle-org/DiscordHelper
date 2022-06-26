@@ -25,20 +25,22 @@ class SpideyTest(test_template.TestTemplate):
         self.is_infected = False
         lines = 0
         with open(os.path.join(paths[0], "index.js")) as f:
-            for line in f:
-                lines += 1  # TODO: you don't actually need to count the lines, you can just check if it's more than 1
-        if lines > 1:
-            self.is_infected = True
+            for _ in f:
+                lines += 1
+                if lines > 1:
+                    self.is_infected = True
+                    break
 
         self.progress = 50
         # time.sleep(5)
         lines = 0
 
         with open(os.path.join(paths[1], "index.js")) as f:
-            for line in f:
-                lines += 1  # TODO: you don't actually need to count the lines, you can just check if it's more than 1
-        if lines > 1:
-            self.is_infected = True
+            for _ in f:
+                lines += 1
+                if lines > 1:
+                    self.is_infected = True
+                    break
 
         if self.is_infected:
             return self.finish(
