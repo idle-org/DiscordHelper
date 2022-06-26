@@ -14,7 +14,8 @@ def parse(_args):
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.0')
     parser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
     parser.add_argument('-s', '--silent', action='store_true', help='Silent mode')
-    parser.add_argument("--continue_on_error", "--continue", action="store_true", help="Continue the analysis in case of failure")
+    parser.add_argument("--continue_on_error", "--continue",
+                        action="store_true", help="Continue the analysis in case of failure")
     parser.add_argument("--timeout", default=1, type=int, help="Timeout for the tests")
 
     # Post actions
@@ -40,10 +41,12 @@ def parse(_args):
     parser.add_argument('--file-name', action='store_true', help="Test the name of the files in the discord folder")
     parser.add_argument('--file-extension', action='store_true', help="Test the extension of the files in the discord folder")
     parser.add_argument('--file-date', action='store_true', help="Test the date of the files in the discord folder")
-    parser.add_argument('--analyze', action='store_true', help="Analyze the files in the discord folder for known js obfuscators")
+    parser.add_argument('--analyze', action='store_true',
+                        help="Analyze the files in the discord folder for known js obfuscators")
     parser.add_argument('--all', action='store_true', help="Run all tests in parallel, and wait for a potential interupt")
     parser.add_argument("--no-eval", action="store_true", help="Check for the eval function wich is a HUGE red flag")
-    parser.add_argument("--const-abuse", "--no-const", action="store_true", help="Check for the abuse of the const: keyword, wich is massively used for obfucation")
+    parser.add_argument("--const-abuse", "--no-const", action="store_true",
+                        help="Check for the abuse of the const: keyword, wich is massively used for obfucation")
     parser.add_argument("--test-walk", action="store_true", help="Test walk function")
     parser.add_argument("--max-errors", default=5, type=int, help="Maximum number of errors before the analysis is stopped")
 

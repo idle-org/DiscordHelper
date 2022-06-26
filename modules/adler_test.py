@@ -20,11 +20,11 @@ def apply_adler(path):
 
 
 class AdlerTest(test_template.TestWalkTemplateNoLogs):
-    def __init__(self, args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock):
+    def __init__(self, thread_parameters):
         """
         Simple test runner, compare adler32 to known good values.
         """
-        super().__init__(args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock)
+        super().__init__(thread_parameters)
 
     def run_test(self):
         self.set_status("running")
@@ -39,14 +39,32 @@ class AdlerTest(test_template.TestWalkTemplateNoLogs):
                     self.add_failure(path, f"Test {self.name()} failed on {short_path}")
                     error_msg += f"{short_path} is " \
                                  f"({res}) not ({self.get_expected_result(path, 'adler32')} b).\n"
-                    self.is_infected = True
-                    if not self.args.continue_on_error:
-                        return self.finish("failure", f"{short_path} is supposed to be {self.get_expected_result(path, 'adler32')} bytes, but it is {adler32(open(path, 'rb').read())} bytes.")
+                    if not self.bad_database:
+                        self.is_infected = True
+                        if not self.args.continue_on_error:
+                            return self.finish(
+                                "failure",
+                                f"{short_path} is supposed to be {self.get_expected_result(path, 'adler32')} "
+                                f"bytes, but it is {adler32(open(path, 'rb').read())} bytes."
+                            )
+                    else:
+                        self.is_unknown = True
+                        if not self.args.continue_on_error:
+                            return self.finish(
+                                "problem",
+                                f"{short_path} is supposed to be {self.get_expected_result(path, 'adler32')} "
+                                f"bytes, but it is {adler32(open(path, 'rb').read())} bytes."
+                            )
 
         self.progress = 100
         if self.is_infected:
             return self.finish(
                 "failure",
+                error_msg
+            )
+        elif self.is_unknown:
+            return self.finish(
+                "problem",
                 error_msg
             )
         return self.finish("success", "Your discord is not infected.")

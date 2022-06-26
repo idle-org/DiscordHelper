@@ -22,3 +22,9 @@ return_code_dict = {
     "problems": "Test found problems",
     "idle": "Test is idle",
 }
+
+thread_parameters = namedtuple(
+    'thread_parameters',
+    'args, agnpath, test_data, queue, queue_lock, dict_process, dict_process_lock, bad_database',
+    defaults=(None, None, None, None, None, None, None, None)
+)
