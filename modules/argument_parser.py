@@ -1,7 +1,7 @@
 import argparse
 
 
-def parse(_args):
+def parse(_args: list) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="Spidey Detector",
         description='Checks for corrupt discord install'
