@@ -197,7 +197,12 @@ class TestRunner:
             self.bad_database = True
         else:
             for test_name in self.selected_tests:
-                if test_name not in self.base_data["tests"]:
+                found_one_value = False
+                for file_name, test_names in self.base_data["tests"].items():
+                    if test_name in test_names:
+                        found_one_value = True
+                        break  # At least one test is in the database
+                if not found_one_value:
                     print(colored(f" > The database is missing the test {test_name}", "red"))
                     self.bad_database = True
 
@@ -456,11 +461,12 @@ def print_status(status, timer_start):
         else:
             mon, sec = divmod(ellapsed_time * 100 / status.progress, 60)
             hr, mon = divmod(mon, 60)
-            estimated_time = "%d:%02d:%02d" % (hr, mon, sec)
+            sec = round(sec, 0) +1
+            estimated_time = f"{hr:n}:{mon:02n}:{sec:02.0n}"
         print(colored(
             f"   > Overall progress: {status.progress}%"
             f" in {time.time() - timer_start:.2f} seconds"
-            f" estimaded time ({estimated_time})", color
+            f" estimaded total time ({estimated_time})", color
         ))
 
 

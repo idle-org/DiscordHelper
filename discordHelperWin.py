@@ -7,7 +7,7 @@ import discordHelper
 import time
 
 # All modules must be loaded before the main program is run.
-from modules import *  # noqa # Set for pyinstaller
+from modules import test_size, test_adler, test_sha, test_spidey, test_line_count  # noqa # Set for pyinstaller
 
 if __name__ == "__main__":
     try:
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
             # Will always try to load discordHelper/discordHelper.json
             run_db = os.path.join(directory_path, "test_results_found.json")
-            argv = rf"--all --autodetect --launch --continue --timeout 25 {db_path}--gen-data {run_db} --db discordHelper/test_results.json".split(" ")  # noqa E501
+            argv = rf"--all --autodetect --printrate 2 --launch --continue --timeout 25 {db_path}--gen-data {run_db} --db discordHelper/test_results.json".split(" ")  # noqa E501
         # print("  > Starting the discordHelper with the following arguments:")
         # print("    > " + " ".join(argv))
 

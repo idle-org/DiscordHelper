@@ -167,6 +167,54 @@ class TestTemplate:
         if self.status_code == "running":
             return self.finish("skipped")
 
+    def add_to_new_data(self, entry, testname, value):
+        """
+        Adds a new entry to the database.
+        :param entry: The entry to add
+        :type entry: str
+        :param testname: The name of the test
+        :type testname: str
+        :param value: The value of the entry
+        :type value: str
+        """
+        if entry not in self.new_data:
+            self.new_data[entry] = {}
+        self.new_data[entry][testname] = value
+        return value
+
+    def get_from_new_data(self, entry, testname):
+        """
+        Gets the value of an entry from the database.
+        :param entry: The entry to get
+        :type entry: str
+        :param testname: The name of the test
+        :type testname: str
+        :return: The value of the entry
+        :rtype: str
+        """
+        if entry in self.new_data:
+            if testname in self.new_data[entry]:
+                return self.new_data[entry][testname]
+        return None
+
+    def get_from_database(self, entry, testname):
+        """
+        Gets the value of an entry from the database.
+        :param entry: The entry to get
+        :type entry: str
+        :param testname: The name of the test
+        :type testname: str
+        :return: The value of the entry
+        :rtype: str
+        """
+        if self.test_data:
+            path = self.agnostic_path.get_short_path(entry)
+            if "tests" in self.test_data:
+                if entry in self.test_data["tests"]:
+                    if testname in self.test_data["tests"][entry]:
+                        return self.test_data["tests"][entry][testname]
+        return None
+
 
 class TestWalkTemplate(TestTemplate):
     def __init__(self, thread_parameters):
@@ -175,57 +223,6 @@ class TestWalkTemplate(TestTemplate):
         """
         super().__init__(thread_parameters)
         self.to_skip = []
-
-    def add_test_result(self, path, testname, result):
-        """
-        Adds a test result to the data dictionary.
-        :param path: Path to the file that was tested
-        :type path: str
-        :param testname: Name of the test
-        :type testname: str
-        :param result: Result of the test
-        :type result: any
-        """
-
-        path = self.agnostic_path.get_short_path(path)
-        if path not in self.new_data:
-            self.new_data[path] = {}
-        self.new_data[path][testname] = result
-        return result
-
-    def get_test_data(self, path, testname):
-        """
-        Gets the test data from the data dictionary.
-        :param path: Path to the file that was tested
-        :type path: str
-        :param testname: Name of the test
-        :type testname: str
-        :return: Test data
-        :rtype: any
-        """
-        path = self.agnostic_path.get_short_path(path)
-        if path in self.new_data:
-            if testname in self.new_data[path]:
-                return self.new_data[path][testname]
-        return None
-
-    def get_expected_result(self, path, testname):
-        """
-        Gets the expected result from the data dictionary.
-        :param path: Path to the file that was tested
-        :type path: str
-        :param testname: Name of the test
-        :type testname: str
-        :return: Expected result
-        :rtype: any
-        """
-        if self.test_data:
-            path = self.agnostic_path.get_short_path(path)
-            if "tests" in self.test_data:
-                if path in self.test_data["tests"]:
-                    if testname in self.test_data["tests"][path]:
-                        return self.test_data["tests"][path][testname]
-        return None
 
     def run_test(self):
         """
@@ -256,9 +253,36 @@ class TestWalkTemplate(TestTemplate):
         """
         Walks the given path and returns a list of all files and directories.
         :return: List of all files
-        :return:
         """
         return self.agnostic_path.all_files
+
+    def add_test_result(self, path: str, testname: str, result: any):
+        """
+        Adds a test result to the data dictionary.
+        :param path: Path to the file being tested
+        :param testname: Name of the test
+        :param result: Result of the test
+        """
+        path = self.agnostic_path.get_short_path(path)
+        return self.add_to_new_data(path, testname, result)
+
+    def get_test_data(self, path, testname):
+        """
+        Gets the test data from the data dictionary.
+        :param path: Path to the file being tested
+        :param testname: Name of the test
+        """
+        return self.get_from_new_data(self.agnostic_path.get_short_path(path), testname)
+
+    def get_expected_result(self, path, testname):
+        """
+        Gets the expected result from the data dictionary.
+        :param path: Path to the file being tested
+        :param testname: Name of the test
+        """
+        if self.test_data:
+            return self.get_from_database(self.agnostic_path.get_short_path(path), testname)
+        return None
 
     def compare(self, path, entry_name, function, args, kwargs, cmp_function=None):
         """
