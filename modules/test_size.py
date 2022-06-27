@@ -1,10 +1,10 @@
 import os
 
-from modules import test_template
+from modules import test_template, internal_io
 
 
 class SizeCheck(test_template.TestWalkTemplateSimpleFunction):
-    def __init__(self, thread_parameters):
+    def __init__(self, thread_parameters: internal_io.thread_parameters):
         """
         Simple test runner, compare file size to known good values.
         """

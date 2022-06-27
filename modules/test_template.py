@@ -2,8 +2,9 @@
 A global template for all tests.
 """
 import os
+from typing import Callable, Union
 
-from modules import internal_io
+from modules import internal_io, agnostic_paths
 
 
 class TestDataError(Exception):
@@ -58,7 +59,7 @@ class TestTemplate:
         self.dict_process_lock.release()
         self.init_test_data()
 
-    def run(self):
+    def run(self) -> None:
         """
         Runs the test.
         """
@@ -68,7 +69,7 @@ class TestTemplate:
             self.add_failure("problem", "DISCORD HELPER:"+str(e))
             return self.finish("problem", str(e))
 
-    def run_test(self):
+    def run_test(self) -> None:
         """
         The main runner function, must be implemented by the child class.
         During the execution of the test, the status code and status MUST be updated.
@@ -76,29 +77,26 @@ class TestTemplate:
         self.set_status("running", "The test will begin shortly, please wait...")
         self.set_status("sucess", "The test was a success but kinda not a success.")
 
-    def init_test_data(self):
+    def init_test_data(self) -> Union[str, None]:
         if self.test_data is None and not self.args.continue_on_error:
             self.set_status("problem", "No test data given.")
             return self.finish()
 
-    def name(self):
+    def name(self) -> str:
         """
         :return: Name of the test
-        :rtype: str
         """
         return str(self.__class__.__name__)
 
-    def get_status_code(self):
+    def get_status_code(self) -> str:
         """
         :return: Status code at the time of call.
-        :rtype: str
         """
         return self.status_code
 
-    def get_status(self):
+    def get_status(self) -> internal_io.test_status:
         """
         :return: Status at the time of call.
-        :rtype: internal_io.test_status
         """
         return internal_io.test_status(
             name=self.name(),
@@ -110,23 +108,19 @@ class TestTemplate:
         )
 
     @staticmethod
-    def get_status_from_code(code):
+    def get_status_from_code(code: str) -> str:
         """
         :param code: The status code to get the status from.
-        :type code: str
         :return: Description of the status code
-        :rtype: str
         """
         return internal_io.return_code_dict[code]
 
-    def set_status(self, statuscode: str, message: str = None):
+    def set_status(self, statuscode: str, message: str = None) -> str:
         """
         Sets a new status code.
         :param statuscode: Status code to set
         :param message: Message to set
-        :type statuscode: str
         :return: new status code
-        :rtype: str
         """
         self.status_code = statuscode
         if message is not None:
@@ -135,9 +129,12 @@ class TestTemplate:
             self.status = self.get_status_from_code(statuscode)
         return self.status_code
 
-    def finish(self, statuscode: str = None, message: str = None):
+    def finish(self, statuscode: str = None, message: str = None) -> str:
         """
         Finishes the test.
+        :param statuscode: Status code to set
+        :param message: Message to set
+        :type statuscode: str
         """
         if message is not None:
             self.status = message
@@ -150,65 +147,54 @@ class TestTemplate:
         self.queue_lock.release()
         return self.get_status_code()
 
-    def add_failure(self, path, message):
+    def add_failure(self, path: str, message: str) -> None:
         """
         Adds a failure to the failure dictionary.
         :param path: Path to the file that failed
-        :type path: str
         :param message: Message to add
-        :type message: str
         """
         self.failure_dict[path] = message
 
-    def __del__(self):
+    def __del__(self) -> None:
         """
         Destructor.
         """
         if self.status_code == "running":
             return self.finish("skipped")
 
-    def add_to_new_data(self, entry, testname, value):
+    def add_to_new_data(self, entry: str, testname: str, value: str) -> any:
         """
         Adds a new entry to the database.
         :param entry: The entry to add
-        :type entry: str
         :param testname: The name of the test
-        :type testname: str
         :param value: The value of the entry
-        :type value: str
+        :return: The value of the entry
         """
         if entry not in self.new_data:
             self.new_data[entry] = {}
         self.new_data[entry][testname] = value
         return value
 
-    def get_from_new_data(self, entry, testname):
+    def get_from_new_data(self, entry: str, testname: str) -> any:
         """
         Gets the value of an entry from the database.
         :param entry: The entry to get
-        :type entry: str
         :param testname: The name of the test
-        :type testname: str
         :return: The value of the entry
-        :rtype: str
         """
         if entry in self.new_data:
             if testname in self.new_data[entry]:
                 return self.new_data[entry][testname]
         return None
 
-    def get_from_database(self, entry, testname):
+    def get_from_database(self, entry: str, testname: str) -> any:
         """
         Gets the value of an entry from the database.
         :param entry: The entry to get
-        :type entry: str
         :param testname: The name of the test
-        :type testname: str
         :return: The value of the entry
-        :rtype: str
         """
         if self.test_data:
-            path = self.agnostic_path.get_short_path(entry)
             if "tests" in self.test_data:
                 if entry in self.test_data["tests"]:
                     if testname in self.test_data["tests"][entry]:
@@ -217,18 +203,17 @@ class TestTemplate:
 
 
 class TestWalkTemplate(TestTemplate):
-    def __init__(self, thread_parameters):
+    def __init__(self, thread_parameters: internal_io.thread_parameters):
         """
         Simple test template.
         """
         super().__init__(thread_parameters)
         self.to_skip = []
 
-    def run_test(self):
+    def run_test(self) -> str:
         """
         The main runner function, must be implemented by the child class.
         Here is an example of how to use the add_test_result function.
-        :return:
         """
         self.set_status("running", "The test will begin shortly, please wait...")
 
@@ -249,24 +234,25 @@ class TestWalkTemplate(TestTemplate):
 
         return self.finish()
 
-    def walk(self):
+    def walk(self) -> list:
         """
         Walks the given path and returns a list of all files and directories.
         :return: List of all files
         """
         return self.agnostic_path.all_files
 
-    def add_test_result(self, path: str, testname: str, result: any):
+    def add_test_result(self, path: str, testname: str, result: any) -> any:
         """
         Adds a test result to the data dictionary.
         :param path: Path to the file being tested
         :param testname: Name of the test
         :param result: Result of the test
+        :return: The result of the test
         """
         path = self.agnostic_path.get_short_path(path)
         return self.add_to_new_data(path, testname, result)
 
-    def get_test_data(self, path, testname):
+    def get_test_data(self, path: str, testname: str) -> any:
         """
         Gets the test data from the data dictionary.
         :param path: Path to the file being tested
@@ -274,7 +260,7 @@ class TestWalkTemplate(TestTemplate):
         """
         return self.get_from_new_data(self.agnostic_path.get_short_path(path), testname)
 
-    def get_expected_result(self, path, testname):
+    def get_expected_result(self, path: str, testname: str) -> Union[str, None]:
         """
         Gets the expected result from the data dictionary.
         :param path: Path to the file being tested
@@ -284,21 +270,16 @@ class TestWalkTemplate(TestTemplate):
             return self.get_from_database(self.agnostic_path.get_short_path(path), testname)
         return None
 
-    def compare(self, path, entry_name, function, args, kwargs, cmp_function=None):
+    def compare(self, path: agnostic_paths.AgnosticPaths, entry_name: str, function: Callable,
+                args: list, kwargs: dict, cmp_function: Callable = None):
         """
         Use the function on the given path, with given arguments and compare it with the entry in the test data.
         :param path: Path to the file or directory
-        :type path: agnostic_path.AgnosticPath
         :param entry_name: Name of the entry in the test data
-        :type entry_name: str
         :param function: Function to use on the path
-        :type function: function
         :param args: Arguments to use on the function
-        :type args: list
         :param kwargs: Keyword arguments to use on the function
-        :type kwargs: dict
         :param cmp_function: Function compare both results
-        :type cmp_function: function
         """
 
         if self.agnostic_path.get_short_path(path) in self.to_skip:
@@ -322,7 +303,7 @@ class TestWalkTemplate(TestTemplate):
 
 
 class TestWalkTemplateNoLogs(TestWalkTemplate):
-    def __init__(self, thread_parameters):
+    def __init__(self, thread_parameters: internal_io.thread_parameters):
         """
         Simple test template.
         """
@@ -331,26 +312,22 @@ class TestWalkTemplateNoLogs(TestWalkTemplate):
 
 
 class TestWalkTemplateSimpleFunction(TestWalkTemplateNoLogs):
-    def __init__(self, thread_parameters, function, unit_test):
+    def __init__(self, thread_parameters: internal_io.thread_parameters, function: Callable, unit_test: str):
         """
         A test template that runs a simple function on every file, and compares the result with the expected data.
         :param thread_parameters: Thread parameters
-        :type thread_parameters: dict
         :param function: Function to use on every file
-        :type function: function
         :param unit_test: A descriptor of what the test returns
-        :type unit_test: str
         """
         super().__init__(thread_parameters)
         self.function = function
         self.test_name = self.name()
         self.unit_test = unit_test
 
-    def run_test(self):
+    def run_test(self) -> bool:
         """
         Walk all files and check their size.
         :return: Whether any of the files are larger than the expected size.
-        :rtype: bool
         """
         self.set_status("running")
         size = self.agnostic_path.size

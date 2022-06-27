@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import subprocess
@@ -6,8 +7,10 @@ import importlib
 import threading
 import time
 from collections import deque
+from typing import List
 
 from modules.internal_io import global_status, thread_parameters
+from modules import agnostic_paths, internal_io
 
 """
 All modules that can be tested
@@ -70,15 +73,12 @@ LOGO = colored(r"""
 
 
 class TestRunner:
-    def __init__(self, args, agnpath, start_time):
+    def __init__(self, args: argparse.Namespace, agnpath: agnostic_paths.AgnosticPaths, start_time: float):
         """
         Main spidey runner
         :param args: List of arguments
-        :type args: argparse.Namespace
         :param agnpath: The path to the discord folder
-        :type agnpath: agnostic_path.AgnosticPath
         :param start_time: The time the test started
-        :type start_time: float
         """
         self.ptb = args.ptb
         self.args = args
@@ -108,17 +108,17 @@ class TestRunner:
         self.open_base_data()
         self.exec_all_tests()
 
-    def update_threat(self, threat_level):
+    def update_threat(self, threat_level: int):
         """
         Updates the threat level
         :param threat_level: The new threat level
-        :type threat_level: int
         """
         self.threat_level = max(threat_level, self.threat_level)
 
-    def open_base_data(self):
+    def open_base_data(self) -> dict:
         """
         Opens the base data file
+        :return: The base data (a json file)
         """
 
         default_database = resource_path(self.agnostic_path.default_database)
@@ -150,9 +150,10 @@ class TestRunner:
             self.base_data = {}
             return self.base_data
 
-    def check_database(self):  # TODO: All of this can be refactored with a function
+    def check_database(self) -> bool:  # TODO: All of this can be refactored with a function
         """
         Check if the database is valid set self.bad_database to True if it is not
+        :return: True if the database is valid
         """
         if not self.base_data:
             print(colored(" > The database is empty", "red"))
@@ -206,11 +207,10 @@ class TestRunner:
                     print(colored(f" > The database is missing the test {test_name}", "red"))
                     self.bad_database = True
 
-    def update_module_list(self):
+    def update_module_list(self) -> List[str]:
         """
         Gets the list of modules to be loaded (in accordance to the config)
         :return: List of modules
-        :rtype: list
         """
         modules = {}
         classes = {}
@@ -229,7 +229,7 @@ class TestRunner:
         self.loaded_test_modules.update(modules)
         self.loaded_test_classes.update(classes)
 
-    def exec_all_tests(self):
+    def exec_all_tests(self) -> None:
         """
         Executes all the tests, get their result as they finishes
         """
@@ -268,7 +268,7 @@ class TestRunner:
         tc.daemon = True
         tc.start()
 
-    def controller_test(self):
+    def controller_test(self) -> None:
         """
         Kills the tests if the user press enter
         """
@@ -289,7 +289,7 @@ class TestRunner:
             except Exception:
                 sys.exit()
 
-    def post_test_runner(self):
+    def post_test_runner(self) -> None:
         """
         Runs the post test runner if all tests are finished
         """
@@ -306,10 +306,9 @@ class TestRunner:
                 time.sleep(0.1)
         return 0
 
-    def test_waiter(self):
+    def test_waiter(self) -> None:
         """
         Waits for the end of the tests
-        :return:
         """
         for t in self.list_of_tests:  # Can only proceed if all tests are finished
             t.join()
@@ -320,11 +319,10 @@ class TestRunner:
             global POST_RUN_ALLOWED
             POST_RUN_ALLOWED = True
 
-    def get_exit_code(self):
+    def get_exit_code(self) -> int:  # TODO: Use a NamedTuple
         """
         Gets the exit code of the tests
         :return: The exit code
-        :rtype: int
         """
         status = self.get_status()
         if status.tests_finished == status.tests_total:
@@ -345,11 +343,10 @@ class TestRunner:
                 exit_code = -1  # The tests are not finished
         return exit_code
 
-    def get_status(self):
+    def get_status(self) -> internal_io.global_status:
         """
         Gets the status of the tests
         :return: The status
-        :rtype: internal_io.global_status
         """
         queue_lock.acquire(timeout=0.5)
         nb_tests = len(self.list_of_tests)
@@ -391,11 +388,10 @@ class TestRunner:
             progress=progress
         )
 
-    def get_test_data(self):
+    def get_test_data(self) -> dict:
         """
         Gets the test data
         :return: The test data
-        :rtype: dict
         """
         data = {}
         queue_lock.acquire()
@@ -409,13 +405,11 @@ class TestRunner:
         return data
 
 
-def export_data(test_runner, data):
+def export_data(test_runner: TestRunner, data: dict) -> dict:
     """
-    Exports the test data
+    Exports the test data and returns it
     :param test_runner: The test runner
-    :type test_runner: TestRunner
     :param data: The test data
-    :type data: dict
     """
     main_data = {
         "global":
@@ -430,13 +424,11 @@ def export_data(test_runner, data):
     return main_data
 
 
-def print_status(status, timer_start):
+def print_status(status: internal_io.global_status, timer_start: float) -> None:
     """
     Prints the status
     :param status: The status
-    :type status: internal_io.global_status
     :param timer_start: The start time of the tests
-    :type timer_start: float
     """
     if status.tests_failed != 0:
         color = "red"
@@ -461,7 +453,7 @@ def print_status(status, timer_start):
         else:
             mon, sec = divmod(ellapsed_time * 100 / status.progress, 60)
             hr, mon = divmod(mon, 60)
-            sec = round(sec, 0) +1
+            sec = round(sec, 0) + 1
             estimated_time = f"{hr:n}:{mon:02n}:{sec:02.0n}"
         print(colored(
             f"   > Overall progress: {status.progress}%"
@@ -470,12 +462,11 @@ def print_status(status, timer_start):
         ))
 
 
-def run_check(args, agnpath):
+def run_check(args: argparse.Namespace, agnpath: agnostic_paths.AgnosticPaths) -> None:
     """
     Runs all operations selected in the config
     :param args: List of arguments
     :param agnpath: Annostic path to the discord folder
-    :return: None
     """
     # Initialize the test runner
     print(LOGO)
@@ -509,7 +500,7 @@ def run_check(args, agnpath):
     sys.exit(tr.get_exit_code())
 
 
-def resource_path(relative_path):
+def resource_path(relative_path: str) -> str:
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -519,7 +510,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def print_final_status(testrunner, start_time, args):
+def print_final_status(testrunner: TestRunner, start_time: float, args: argparse.Namespace) -> None:
     """
     Prints the final status
     """
@@ -558,14 +549,15 @@ def print_final_status(testrunner, start_time, args):
     print(colored(f"\nThe program executed {msg_error}, exiting in {args.timeout} seconds...", color))
 
 
-def fill_it(size, string1, string2):
+def fill_it(size: int, string1: str, string2: str) -> str:
     """
-    Fills a string with a character
+    Makes a string with the format "string1......string2"
+    with as many "." as needed to fill the size
     """
     return string1 + max(size - len(string1)-len(string2), 0) * "." + string2
 
 
-def at_max_elements(table, msize, fill):
+def at_max_elements(table: list, msize: int, fill: str) -> list:
     """
     Display at maximum msize elements, replace last with fill and return the table
     """
@@ -578,9 +570,9 @@ def at_max_elements(table, msize, fill):
     return table
 
 
-def fit_it_under(message, size, start_line=""):
+def fit_it_under(message: str, size: int, start_line: str = "") -> list:
     """
-    Fits a message under a size
+    Fits a message under a size (split lines into multiple lines if needed) and returns the list of lines
     """
     final_message = []
     for line in message.split('\n'):
@@ -592,9 +584,9 @@ def fit_it_under(message, size, start_line=""):
     return final_message
 
 
-def gen_save_data(args, test_runner):
+def gen_save_data(args: argparse.Namespace, test_runner: TestRunner) -> None:
     """
-    Generates the save data
+    Generates the save data and writes it to a file
     """
     print(colored("\n  > Generating data...", "blue"))
     data = test_runner.get_test_data()
