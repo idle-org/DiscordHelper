@@ -48,7 +48,7 @@ class SpideyTest(test_template.TestTemplate):
                 "If you've recently downloaded a .exe directly sent from someone, "
                 "do also consider a clean windows reinstall."
             )
-        self.add_to_new_data("global_tests", "Spidey", "passed")
+        self.add_to_new_data("global_tests", self.name(), "passed")
         self.progress = 100
         return self.finish("success", "Your discord is not infected.")
 
