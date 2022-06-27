@@ -7,7 +7,7 @@ import discordHelper
 import time
 
 # All modules must be loaded before the main program is run.
-from modules import spidey_test, test_template
+from modules import test_size, test_adler, test_sha, test_spidey, test_line_count  # noqa # Set for pyinstaller
 
 if __name__ == "__main__":
     try:
@@ -24,9 +24,9 @@ if __name__ == "__main__":
                 db_path = ""
                 # print("  > No user database was found, the bundled one will be used.")
 
-            run_db = os.path.join(directory_path, "discordHelper_last_run.json")
-            argv = f"--all --autodetect --launch --continue --timeout 1 {db_path}--gen-data {run_db}.yaml".split(" ")
-
+            # Will always try to load discordHelper/discordHelper.json
+            run_db = os.path.join(directory_path, "test_results_found.json")
+            argv = rf"--all --autodetect --printrate 2 --launch --continue --timeout 25 {db_path}--gen-data {run_db} --db discordHelper/test_results.json".split(" ")  # noqa E501
         # print("  > Starting the discordHelper with the following arguments:")
         # print("    > " + " ".join(argv))
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
         discordHelper.main(args)
     except Exception as e:
-        print(e)
+        print("Error: " + str(e))
         print("  > An error occured, please check the console for more information...")
         time.sleep(5)
         raise SystemExit
