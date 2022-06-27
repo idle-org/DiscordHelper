@@ -1,6 +1,7 @@
 """
 A global template for all tests.
 """
+import os
 
 from modules import internal_io
 
@@ -166,6 +167,54 @@ class TestTemplate:
         if self.status_code == "running":
             return self.finish("skipped")
 
+    def add_to_new_data(self, entry, testname, value):
+        """
+        Adds a new entry to the database.
+        :param entry: The entry to add
+        :type entry: str
+        :param testname: The name of the test
+        :type testname: str
+        :param value: The value of the entry
+        :type value: str
+        """
+        if entry not in self.new_data:
+            self.new_data[entry] = {}
+        self.new_data[entry][testname] = value
+        return value
+
+    def get_from_new_data(self, entry, testname):
+        """
+        Gets the value of an entry from the database.
+        :param entry: The entry to get
+        :type entry: str
+        :param testname: The name of the test
+        :type testname: str
+        :return: The value of the entry
+        :rtype: str
+        """
+        if entry in self.new_data:
+            if testname in self.new_data[entry]:
+                return self.new_data[entry][testname]
+        return None
+
+    def get_from_database(self, entry, testname):
+        """
+        Gets the value of an entry from the database.
+        :param entry: The entry to get
+        :type entry: str
+        :param testname: The name of the test
+        :type testname: str
+        :return: The value of the entry
+        :rtype: str
+        """
+        if self.test_data:
+            path = self.agnostic_path.get_short_path(entry)
+            if "tests" in self.test_data:
+                if entry in self.test_data["tests"]:
+                    if testname in self.test_data["tests"][entry]:
+                        return self.test_data["tests"][entry][testname]
+        return None
+
 
 class TestWalkTemplate(TestTemplate):
     def __init__(self, thread_parameters):
@@ -174,57 +223,6 @@ class TestWalkTemplate(TestTemplate):
         """
         super().__init__(thread_parameters)
         self.to_skip = []
-
-    def add_test_result(self, path, testname, result):
-        """
-        Adds a test result to the data dictionary.
-        :param path: Path to the file that was tested
-        :type path: str
-        :param testname: Name of the test
-        :type testname: str
-        :param result: Result of the test
-        :type result: any
-        """
-
-        path = self.agnostic_path.get_short_path(path)
-        if path not in self.new_data:
-            self.new_data[path] = {}
-        self.new_data[path][testname] = result
-        return result
-
-    def get_test_data(self, path, testname):
-        """
-        Gets the test data from the data dictionary.
-        :param path: Path to the file that was tested
-        :type path: str
-        :param testname: Name of the test
-        :type testname: str
-        :return: Test data
-        :rtype: any
-        """
-        path = self.agnostic_path.get_short_path(path)
-        if path in self.new_data:
-            if testname in self.new_data[path]:
-                return self.new_data[path][testname]
-        return None
-
-    def get_expected_result(self, path, testname):
-        """
-        Gets the expected result from the data dictionary.
-        :param path: Path to the file that was tested
-        :type path: str
-        :param testname: Name of the test
-        :type testname: str
-        :return: Expected result
-        :rtype: any
-        """
-        if self.test_data:
-            path = self.agnostic_path.get_short_path(path)
-            if "tests" in self.test_data:
-                if path in self.test_data["tests"]:
-                    if testname in self.test_data["tests"][path]:
-                        return self.test_data["tests"][path][testname]
-        return None
 
     def run_test(self):
         """
@@ -255,9 +253,36 @@ class TestWalkTemplate(TestTemplate):
         """
         Walks the given path and returns a list of all files and directories.
         :return: List of all files
-        :return:
         """
         return self.agnostic_path.all_files
+
+    def add_test_result(self, path: str, testname: str, result: any):
+        """
+        Adds a test result to the data dictionary.
+        :param path: Path to the file being tested
+        :param testname: Name of the test
+        :param result: Result of the test
+        """
+        path = self.agnostic_path.get_short_path(path)
+        return self.add_to_new_data(path, testname, result)
+
+    def get_test_data(self, path, testname):
+        """
+        Gets the test data from the data dictionary.
+        :param path: Path to the file being tested
+        :param testname: Name of the test
+        """
+        return self.get_from_new_data(self.agnostic_path.get_short_path(path), testname)
+
+    def get_expected_result(self, path, testname):
+        """
+        Gets the expected result from the data dictionary.
+        :param path: Path to the file being tested
+        :param testname: Name of the test
+        """
+        if self.test_data:
+            return self.get_from_database(self.agnostic_path.get_short_path(path), testname)
+        return None
 
     def compare(self, path, entry_name, function, args, kwargs, cmp_function=None):
         """
@@ -303,3 +328,70 @@ class TestWalkTemplateNoLogs(TestWalkTemplate):
         """
         super().__init__(thread_parameters)
         self.to_skip = [r"modules\discord_dispatch-1\discord_dispatch\dispatch.log"]
+
+
+class TestWalkTemplateSimpleFunction(TestWalkTemplateNoLogs):
+    def __init__(self, thread_parameters, function, unit_test):
+        """
+        A test template that runs a simple function on every file, and compares the result with the expected data.
+        :param thread_parameters: Thread parameters
+        :type thread_parameters: dict
+        :param function: Function to use on every file
+        :type function: function
+        :param unit_test: A descriptor of what the test returns
+        :type unit_test: str
+        """
+        super().__init__(thread_parameters)
+        self.function = function
+        self.test_name = self.name()
+        self.unit_test = unit_test
+
+    def run_test(self):
+        """
+        Walk all files and check their size.
+        :return: Whether any of the files are larger than the expected size.
+        :rtype: bool
+        """
+        self.set_status("running")
+        size = self.agnostic_path.size
+
+        error_msg = ""
+        for i, path in enumerate(self.walk()):
+            self.progress = int(100*i/size)
+            short_path = self.agnostic_path.get_short_path(path)
+            if os.path.isfile(path):
+                if not self.compare(path, self.test_name, self.function, (), {}):
+                    res = self.get_test_data(path, self.test_name)
+                    self.add_failure(path, f"Test {self.name()} failed on {short_path}")
+                    error_msg += f"{short_path} is " \
+                                 f"({res}{self.unit_test}) not ({self.get_expected_result(path, self.test_name)}" \
+                                 f"{self.unit_test}).\n"
+                    # print(self.bad_database)
+                    if not self.bad_database:
+                        self.is_infected = True
+                        if not self.args.continue_on_error:
+                            return self.finish(
+                                "failure",
+                                f"{short_path} is supposed to be {self.get_expected_result(path, self.test_name)}"
+                                f" {self.unit_test}, but it is {self.get_expected_result(path, self.test_name)}"
+                                f"{self.unit_test}.")
+                    else:
+                        self.is_unknown = True
+                        if not self.args.continue_on_error:
+                            return self.finish(
+                                "problem",
+                                f"{short_path} is supposed to be {self.get_expected_result(path, self.test_name)}"
+                                f"{self.unit_test}, but it is {os.path.getsize(path)}{self.unit_test}")
+
+        self.progress = 100
+        if self.is_infected:
+            return self.finish(
+                "failure",
+                error_msg
+            )
+        elif self.is_unknown:
+            return self.finish(
+                "problem",
+                error_msg
+            )
+        return self.finish("success", "Your discord is not infected.")

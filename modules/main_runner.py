@@ -8,7 +8,6 @@ import time
 from collections import deque
 
 from modules.internal_io import global_status, thread_parameters
-from modules import size_test, adler_test # noqa # Used to force import of modules by pyinstaller
 
 """
 All modules that can be tested
@@ -20,10 +19,11 @@ os.system('color')
 # red, green, yellow, blue, magenta, cyan, white.
 
 _TEST_MODULES = {
-    "spidey": ["spidey_test", "SpideyTest"],
-    # "test_walk": ["test_template", "TestWalkTemplate"],
-    "size_test": ["size_test", "SizeTest"],
-    "adler_test": ["adler_test", "AdlerTest"],
+    "spidey": ["test_spidey", "SpideyTest"],
+    "file_size": ["test_size", "SizeCheck"],
+    "adler": ["test_adler", "Adler32"],
+    "file_hash": ["test_sha", "Sha256"],
+    "line_count": ["test_line_count", "LineCount"],
 }
 
 PROGRAM_VERSION = "1.0.0"
@@ -87,9 +87,10 @@ class TestRunner:
         self.main_path = agnpath.main_path
         self.version = agnpath.version
         self.start_time = start_time
+        self.selected_tests = []
 
         self.is_infected = 0  # Only set to 1 if the certainty is high enough
-        self.is_unknown = 0  # Unknown if the file is infected or not
+        self.is_unknown = 1  # Unknown if the file is infected or not
         self.threat_level = 0  # The threat level of the infection, 0 is the lowest, can only be increased
         self.errors = 0
         self.bad_database = False  # Set to true if the database is not valid
@@ -149,7 +150,7 @@ class TestRunner:
             self.base_data = {}
             return self.base_data
 
-    def check_database(self):
+    def check_database(self):  # TODO: All of this can be refactored with a function
         """
         Check if the database is valid set self.bad_database to True if it is not
         """
@@ -194,6 +195,16 @@ class TestRunner:
         if "tests" not in self.base_data:
             print(colored(" > The database is missing the test results", "red"))
             self.bad_database = True
+        else:
+            for test_name in self.selected_tests:
+                found_one_value = False
+                for file_name, test_names in self.base_data["tests"].items():
+                    if test_name in test_names:
+                        found_one_value = True
+                        break  # At least one test is in the database
+                if not found_one_value:
+                    print(colored(f" > The database is missing the test {test_name}", "red"))
+                    self.bad_database = True
 
     def update_module_list(self):
         """
@@ -209,6 +220,7 @@ class TestRunner:
                 if self.args.all or self.args.__getattribute__(module_name):
                     modules[values[0]] = importlib.import_module(f"modules.{values[0]}")
                     classes[values[0]] = getattr(modules[values[0]], values[1])
+                    self.selected_tests.append(values[1])
 
         except AttributeError as e:
             print(f"The module {module_name} was not loaded because it was not specified in the config.")
@@ -361,7 +373,10 @@ class TestRunner:
 
         for test_name, test in self.dict_of_processes.items():
             progress += test.progress
-        progress = int(progress / nb_tests)
+        if nb_tests == 0:
+            progress = 100
+        else:
+            progress = int(progress / nb_tests)
 
         nb_tests_ran = nb_tests_success + nb_tests_failure + nb_tests_skipped + nb_tests_error
         nb_test_running = nb_tests - nb_tests_ran
@@ -446,11 +461,12 @@ def print_status(status, timer_start):
         else:
             mon, sec = divmod(ellapsed_time * 100 / status.progress, 60)
             hr, mon = divmod(mon, 60)
-            estimated_time = "%d:%02d:%02d" % (hr, mon, sec)
+            sec = round(sec, 0) +1
+            estimated_time = f"{hr:n}:{mon:02n}:{sec:02.0n}"
         print(colored(
             f"   > Overall progress: {status.progress}%"
             f" in {time.time() - timer_start:.2f} seconds"
-            f" estimaded time ({estimated_time})", color
+            f" estimaded total time ({estimated_time})", color
         ))
 
 
@@ -508,7 +524,7 @@ def print_final_status(testrunner, start_time, args):
     Prints the final status
     """
     status = testrunner.get_status()
-    if status.tests_failed == 0 and status.tests_error == 0:
+    if status.tests_failed == 0 and status.tests_error == 0 and status.tests_total != 0:
         color = "green"
         print(CLEAR_CODE)
     elif status.tests_failed > 0:
