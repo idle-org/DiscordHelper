@@ -7,7 +7,7 @@ import discordHelper
 import time
 
 # All modules must be loaded before the main program is run.
-from modules import spidey_test, test_template  # noqa # Set for pyinstaller
+from modules import *  # noqa # Set for pyinstaller
 
 if __name__ == "__main__":
     try:
