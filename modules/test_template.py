@@ -1,6 +1,7 @@
 """
 A global template for all tests.
 """
+import os
 
 from modules import internal_io
 
@@ -303,3 +304,70 @@ class TestWalkTemplateNoLogs(TestWalkTemplate):
         """
         super().__init__(thread_parameters)
         self.to_skip = [r"modules\discord_dispatch-1\discord_dispatch\dispatch.log"]
+
+
+class TestWalkTemplateSimpleFunction(TestWalkTemplateNoLogs):
+    def __init__(self, thread_parameters, function, unit_test):
+        """
+        A test template that runs a simple function on every file, and compares the result with the expected data.
+        :param thread_parameters: Thread parameters
+        :type thread_parameters: dict
+        :param function: Function to use on every file
+        :type function: function
+        :param unit_test: A descriptor of what the test returns
+        :type unit_test: str
+        """
+        super().__init__(thread_parameters)
+        self.function = function
+        self.test_name = self.name()
+        self.unit_test = unit_test
+
+    def run_test(self):
+        """
+        Walk all files and check their size.
+        :return: Whether any of the files are larger than the expected size.
+        :rtype: bool
+        """
+        self.set_status("running")
+        size = self.agnostic_path.size
+
+        error_msg = ""
+        for i, path in enumerate(self.walk()):
+            self.progress = int(100*i/size)
+            short_path = self.agnostic_path.get_short_path(path)
+            if os.path.isfile(path):
+                if not self.compare(path, self.test_name, self.function, (), {}):
+                    res = self.get_test_data(path, self.test_name)
+                    self.add_failure(path, f"Test {self.name()} failed on {short_path}")
+                    error_msg += f"{short_path} is " \
+                                 f"({res}{self.unit_test}) not ({self.get_expected_result(path, self.test_name)}" \
+                                 f"{self.unit_test}).\n"
+                    # print(self.bad_database)
+                    if not self.bad_database:
+                        self.is_infected = True
+                        if not self.args.continue_on_error:
+                            return self.finish(
+                                "failure",
+                                f"{short_path} is supposed to be {self.get_expected_result(path, self.test_name)}"
+                                f" {self.unit_test}, but it is {self.get_expected_result(path, self.test_name)}"
+                                f"{self.unit_test}.")
+                    else:
+                        self.is_unknown = True
+                        if not self.args.continue_on_error:
+                            return self.finish(
+                                "problem",
+                                f"{short_path} is supposed to be {self.get_expected_result(path, self.test_name)}"
+                                f"{self.unit_test}, but it is {os.path.getsize(path)}{self.unit_test}")
+
+        self.progress = 100
+        if self.is_infected:
+            return self.finish(
+                "failure",
+                error_msg
+            )
+        elif self.is_unknown:
+            return self.finish(
+                "problem",
+                error_msg
+            )
+        return self.finish("success", "Your discord is not infected.")
