@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
             # Will always try to load discordHelper/discordHelper.json
             run_db = os.path.join(directory_path, "test_results_found.json")
-            argv = rf"--all --autodetect --printrate 2 --launch --continue --timeout 25 {db_path}--gen-data {run_db} --db discordHelper/test_results.json".split(" ")  # noqa E501
+            argv = rf"--all --autodetect --printrate 2 --launch --continue --timeout 2 {db_path}--gen-data {run_db} --db discordHelper/test_results.json".split(" ")  # noqa E501
         # print("  > Starting the discordHelper with the following arguments:")
         # print("    > " + " ".join(argv))
 

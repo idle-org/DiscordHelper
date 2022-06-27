@@ -15,7 +15,7 @@ class TestDataError(Exception):
 
 
 class TestTemplate:
-    def __init__(self, thread_parameters: internal_io.thread_parameters):
+    def __init__(self, thread_parameters: internal_io.thread_parameters, use_cache: bool = True) -> None:
         """
         Simple test template.
         :param thread_parameters.args: List of arguments
@@ -50,6 +50,7 @@ class TestTemplate:
         self.failure_dict = {}
         self.new_data = {}
         self.progress = 0
+        self.use_cache = use_cache
         self.is_unknown = False
         self.dict_process = thread_parameters.dict_process
         self.dict_process_lock = thread_parameters.dict_process_lock
@@ -66,7 +67,7 @@ class TestTemplate:
         try:
             self.run_test()
         except Exception as e:
-            self.add_failure("problem", "DISCORD HELPER:"+str(e))
+            self.add_failure("problem", "DISCORD HELPER:" + str(e))
             return self.finish("problem", str(e))
 
     def run_test(self) -> None:
@@ -203,11 +204,11 @@ class TestTemplate:
 
 
 class TestWalkTemplate(TestTemplate):
-    def __init__(self, thread_parameters: internal_io.thread_parameters):
+    def __init__(self, thread_parameters: internal_io.thread_parameters, use_cache: bool = False):
         """
         Simple test template.
         """
-        super().__init__(thread_parameters)
+        super().__init__(thread_parameters, use_cache)
         self.to_skip = []
 
     def run_test(self) -> str:
@@ -284,7 +285,10 @@ class TestWalkTemplate(TestTemplate):
 
         if self.agnostic_path.get_short_path(path) in self.to_skip:
             return True
-
+        if self.use_cache:
+            kwargs["cached_data"] = self.agnostic_path.cached_file(path)
+        else:
+            kwargs["cached_data"] = None
         data_origin = self.add_test_result(path, entry_name, function(path, *args, **kwargs))
 
         expected_data = self.get_expected_result(path, entry_name)
@@ -303,23 +307,24 @@ class TestWalkTemplate(TestTemplate):
 
 
 class TestWalkTemplateNoLogs(TestWalkTemplate):
-    def __init__(self, thread_parameters: internal_io.thread_parameters):
+    def __init__(self, thread_parameters: internal_io.thread_parameters, use_cache: bool = False):
         """
         Simple test template.
         """
-        super().__init__(thread_parameters)
+        super().__init__(thread_parameters, use_cache)
         self.to_skip = [r"modules\discord_dispatch-1\discord_dispatch\dispatch.log"]
 
 
 class TestWalkTemplateSimpleFunction(TestWalkTemplateNoLogs):
-    def __init__(self, thread_parameters: internal_io.thread_parameters, function: Callable, unit_test: str):
+    def __init__(self, thread_parameters: internal_io.thread_parameters,
+                 function: Callable, unit_test: str, use_cache: bool = False):
         """
         A test template that runs a simple function on every file, and compares the result with the expected data.
         :param thread_parameters: Thread parameters
         :param function: Function to use on every file
         :param unit_test: A descriptor of what the test returns
         """
-        super().__init__(thread_parameters)
+        super().__init__(thread_parameters, use_cache)
         self.function = function
         self.test_name = self.name()
         self.unit_test = unit_test
@@ -334,7 +339,7 @@ class TestWalkTemplateSimpleFunction(TestWalkTemplateNoLogs):
 
         error_msg = ""
         for i, path in enumerate(self.walk()):
-            self.progress = int(100*i/size)
+            self.progress = int(100*i / size)
             short_path = self.agnostic_path.get_short_path(path)
             if os.path.isfile(path):
                 if not self.compare(path, self.test_name, self.function, (), {}):

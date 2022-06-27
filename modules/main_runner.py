@@ -554,7 +554,7 @@ def fill_it(size: int, string1: str, string2: str) -> str:
     Makes a string with the format "string1......string2"
     with as many "." as needed to fill the size
     """
-    return string1 + max(size - len(string1)-len(string2), 0) * "." + string2
+    return string1 + max(size - len(string1) - len(string2), 0) * "." + string2
 
 
 def at_max_elements(table: list, msize: int, fill: str) -> list:
@@ -566,7 +566,7 @@ def at_max_elements(table: list, msize: int, fill: str) -> list:
 
     # if en(table) > lmsize:
     table = table[:msize] + [
-        fill+"..."+str(len(table)-msize)+" more lines" if len(table) > msize else ""]
+        fill + "..." + str(len(table) - msize)+" more lines" if len(table) > msize else ""]
     return table
 
 
