@@ -16,6 +16,7 @@ def apply_adler(path: str, cached_data: bytes = None) -> hex:
     if cached_data is None:
         with open(path, "rb") as f:
             return hex(adler32(f.read()))
+
     return hex(adler32(cached_data))
 
 
@@ -24,4 +25,4 @@ class Adler32(test_template.TestWalkTemplateSimpleFunction):
         """
         Simple test runner, compare adler32 to known good values.
         """
-        super().__init__(thread_parameters, apply_adler, "")
+        super().__init__(thread_parameters, apply_adler, "", use_cache=True)

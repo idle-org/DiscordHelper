@@ -31,4 +31,4 @@ class Sha256(test_template.TestWalkTemplateSimpleFunction):
         """
         Sha256 hash function.
         """
-        super().__init__(thread_parameters, sha256_hash, "")
+        super().__init__(thread_parameters, sha256_hash, "", use_cache=True)
