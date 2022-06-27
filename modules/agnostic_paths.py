@@ -57,9 +57,9 @@ class AgnosticPaths:
 
     def _get_path(self) -> str:
         """
-        Return the base path of the install, note that the self.main_path is not returned,
+        Return the base path of the installation, note that the self.main_path is not returned,
         and this method is meant to be used at init only
-        :return: Base path of the install (minus the version on Windows)
+        :return: Base path of the installation (minus the version on Windows)
         """
         if self.force_path is not None:
             return self.force_path
@@ -111,7 +111,7 @@ class AgnosticPaths:
         else:
             raise OSError("Can't find for version on your OS.")
 
-    def _update_path(self):
+    def _update_path(self) -> None:
         """
         Update the main path with the version, if needed (windows & mac only)
         """
@@ -149,7 +149,7 @@ class AgnosticPaths:
         Tries to open the path /discord_path/args[0]/args[1].../args[n]
         :param args: The path of the file or directory as a list of parameters __call__("folder1", "folder2", ..., "foldern")
         :return: The path is it exists
-        :raises: FileNotFoundError if the path doesn't exists
+        :raises: FileNotFoundError if the path doesn't exist
         """
         _path = os.path.join(self.main_path, *args)
         if not os.path.exists(_path):
@@ -163,7 +163,7 @@ class AgnosticPaths:
         """
         return self.main_path
 
-    def walk_all_files(self, *args : str) -> List[str]:
+    def walk_all_files(self, *args: str) -> List[str]:
         """
         Walks all files in the given path
         :param args: The path

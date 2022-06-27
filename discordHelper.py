@@ -1,16 +1,16 @@
 #!/usr/bin/python3
 
 """ Main program """
+import argparse
 
 from modules import main_runner, agnostic_paths, argument_parser
 import sys
 
 
-def main(argm):
+def main(argm: argparse.Namespace):
     """
     Main program
     :param argm: List of arguments
-    :type argm: argparse.Namespace
     """
     agnostic_path = agnostic_paths.AgnosticPaths(argm)
     main_runner.run_check(argm, agnostic_path)

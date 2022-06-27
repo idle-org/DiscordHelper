@@ -1,21 +1,20 @@
 import os
 
-from modules import test_template
+from modules import test_template, internal_io
 
 
 class SpideyTest(test_template.TestTemplate):
-    def __init__(self, thread_parameters):
+    def __init__(self, thread_parameters: internal_io.thread_parameters):
         """
         Simple test runner, for testing the detection of Spidey viruses.
         """
         super().__init__(thread_parameters)
 
-    def run_test(self):
+    def run_test(self) -> str:
         """
         Counts the number of lines in both index.js files. If it's more than one, it's almost certain your discord
         is corrupted.
-        :return: Whether any of the index.js is more than one line
-        :rtype: bool
+        :return: The status of the test as a string.
         """
         self.set_status("running")
 
@@ -52,11 +51,10 @@ class SpideyTest(test_template.TestTemplate):
         self.progress = 100
         return self.finish("success", "Your discord is not infected.")
 
-    def get_path(self):
+    def get_path(self) -> str:
         """
         Gets the path of the two folders we need to check
         :return: Two paths.
-        :rtype: str
         """
         discord_modules = self.agnostic_path("modules", "discord_modules-1", "discord_modules")
         discord_desktop_core = self.agnostic_path("modules", "discord_desktop_core-1", "discord_desktop_core")

@@ -59,7 +59,7 @@ class TestTemplate:
         self.dict_process_lock.release()
         self.init_test_data()
 
-    def run(self):
+    def run(self) -> None:
         """
         Runs the test.
         """
@@ -69,7 +69,7 @@ class TestTemplate:
             self.add_failure("problem", "DISCORD HELPER:"+str(e))
             return self.finish("problem", str(e))
 
-    def run_test(self):
+    def run_test(self) -> None:
         """
         The main runner function, must be implemented by the child class.
         During the execution of the test, the status code and status MUST be updated.
@@ -155,7 +155,7 @@ class TestTemplate:
         """
         self.failure_dict[path] = message
 
-    def __del__(self):
+    def __del__(self) -> None:
         """
         Destructor.
         """
@@ -195,7 +195,6 @@ class TestTemplate:
         :return: The value of the entry
         """
         if self.test_data:
-            path = self.agnostic_path.get_short_path(entry)
             if "tests" in self.test_data:
                 if entry in self.test_data["tests"]:
                     if testname in self.test_data["tests"][entry]:
@@ -211,7 +210,7 @@ class TestWalkTemplate(TestTemplate):
         super().__init__(thread_parameters)
         self.to_skip = []
 
-    def run_test(self):
+    def run_test(self) -> str:
         """
         The main runner function, must be implemented by the child class.
         Here is an example of how to use the add_test_result function.
@@ -242,7 +241,7 @@ class TestWalkTemplate(TestTemplate):
         """
         return self.agnostic_path.all_files
 
-    def add_test_result(self, path: str, testname: str, result: any) -> None:
+    def add_test_result(self, path: str, testname: str, result: any) -> any:
         """
         Adds a test result to the data dictionary.
         :param path: Path to the file being tested
@@ -271,7 +270,8 @@ class TestWalkTemplate(TestTemplate):
             return self.get_from_database(self.agnostic_path.get_short_path(path), testname)
         return None
 
-    def compare(self, path: agnostic_paths.AgnosticPaths, entry_name: str, function: Callable, args: list, kwargs: dict, cmp_function: Callable = None):
+    def compare(self, path: agnostic_paths.AgnosticPaths, entry_name: str, function: Callable,
+                args: list, kwargs: dict, cmp_function: Callable = None):
         """
         Use the function on the given path, with given arguments and compare it with the entry in the test data.
         :param path: Path to the file or directory
