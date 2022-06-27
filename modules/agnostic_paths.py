@@ -7,7 +7,7 @@ import sys
 import random
 import argparse
 
-from typing import List
+from typing import List, Dict
 
 
 class AgnosticPaths:
@@ -33,12 +33,39 @@ class AgnosticPaths:
         self.all_files = self.walk_all_files()
         random.shuffle(self.all_files)
         self.size = len(self.all_files)
+        self.cached_files = {}
+        self.cached_dirs = {}
+        self._precache_files()
+
+    def walk_cached(self) -> Dict[str, bytes]:
+        """
+        Returns the cached files and directories
+        :return: The list of files and directories
+        """
+        return self.cached_files
+
+    def walk_files(self) -> List[str]:
+        """
+        Returns the list of all files in the discord install
+        :return: The list of all files in the discord install
+        """
+        return self.all_files
+
+    def cached_file(self, path: str) -> bytes:
+        """
+        Returns the file at the given path, if it is cached, otherwise it will return None
+        :param path: The path to the file
+        :return: The file at the given path, if it is cached, otherwise it will return None
+        """
+        if path in self.cached_files:
+            return self.cached_files[path]
+        return None
 
     def get_os(self) -> str:
         """
         Get the os string in a short, spydey-detector way.
-        For now only windows and linux are supported, note that due to the nature of linux builds, strings will likely become
-        linux-arch-deb, linux-arch-snap etc...
+        For now only windows and linux are supported, note that due to the nature of linux builds,
+        strings will likely become linux-arch-deb, linux-arch-snap etc...
         :return: ("windows", "linux", "mac")
         """
         platform = sys.platform
@@ -65,7 +92,7 @@ class AgnosticPaths:
             return self.force_path
         if self.os == 'windows':
             base_path = os.path.join(os.path.expanduser('~'), "AppData", "Local", "Discord")
-            ptb_path = base_path+"PTB"
+            ptb_path = base_path + "PTB"
             if self.args.autodetect:
                 if os.path.exists(ptb_path):
                     self.ptb = "PTB"
@@ -77,7 +104,7 @@ class AgnosticPaths:
                     return base_path
             if self.ptb == 'PTB':
                 self.default_database = "databases/windows_ptb.jsone"
-                return base_path+"PTB"
+                return base_path + "PTB"
             else:
                 self.default_database = "databases/windows_base.json"
                 return base_path  # Try to find the default version
@@ -147,7 +174,7 @@ class AgnosticPaths:
     def __call__(self, *args: str) -> str:
         """
         Tries to open the path /discord_path/args[0]/args[1].../args[n]
-        :param args: The path of the file or directory as a list of parameters __call__("folder1", "folder2", ..., "foldern")
+        :param args: The path of the file or directory as a list of parameters __call__("folder_1",  ..., "folder_n")
         :return: The path is it exists
         :raises: FileNotFoundError if the path doesn't exist
         """
@@ -180,6 +207,15 @@ class AgnosticPaths:
         :return: The short path
         """
         return os.path.relpath(path, self.main_path)
+
+    def _precache_files(self) -> None:
+        """
+        Precache all files in the discord folder
+        """
+        self.cached_files = {}
+        for file in self.all_files:
+            with open(file, "rb") as f:
+                self.cached_files[file] = f.read()
 
     def __repr__(self) -> str:
         """

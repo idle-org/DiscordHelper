@@ -10,4 +10,6 @@ class LineCount(test_template.TestWalkTemplateSimpleFunction):
         """
         Simple test runner, compare line count to known good values.
         """
-        super().__init__(thread_parameters, lambda path: len(open(path, "rb").readlines()), " lines")
+        super().__init__(thread_parameters,
+                         lambda bstr, cached_data: len(open(bstr, "rb").readlines()),
+                         " lines", use_cache=False)
