@@ -474,7 +474,7 @@ def run_check(args: argparse.Namespace, agnpath: agnostic_paths.AgnosticPaths) -
     tr = TestRunner(args, agnpath, start_time=start)  # All operation are executed in parallel and the user can stop them
 
     # Poll information from the tests
-    POLLRATE, PRINT_RATE, COUNTER = args.pollrate, args.printrate, 0
+    POLLRATE, PRINT_RATE, COUNTER = args.pollrate, args.printrate, 1
     COUNTER_MAX = int(PRINT_RATE / POLLRATE)
 
     # Main test polling loop
