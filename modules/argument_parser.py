@@ -33,10 +33,11 @@ def parse(_args):
 
     # Tests
     parser.add_argument('--spidey', action='store_true', help='Runs the spidey test')
+    parser.add_argument('--adler', "--adler32", action='store_true', help='Runs the adler32 test')
     parser.add_argument('--line-count', action='store_true', help='Test all known files for line count')
     parser.add_argument('--file-count', action='store_true', help="Test the number of files in the discord folder")
     parser.add_argument('--file-size', action='store_true', help="Test the size of the files in the discord folder")
-    parser.add_argument('--file-hash', action='store_true', help="Test the hash of the files in the discord folder")
+    parser.add_argument('--file-hash', '--sha', action='store_true', help="Test the hash of the files in the discord folder")
     parser.add_argument('--file-path', action='store_true', help="Test the path of the files in the discord folder")
     parser.add_argument('--file-name', action='store_true', help="Test the name of the files in the discord folder")
     parser.add_argument('--file-extension', action='store_true', help="Test the extension of the files in the discord folder")
@@ -47,7 +48,6 @@ def parse(_args):
     parser.add_argument("--no-eval", action="store_true", help="Check for the eval function wich is a HUGE red flag")
     parser.add_argument("--const-abuse", "--no-const", action="store_true",
                         help="Check for the abuse of the const: keyword, wich is massively used for obfucation")
-    parser.add_argument("--test-walk", action="store_true", help="Test walk function")
     parser.add_argument("--max-errors", default=5, type=int, help="Maximum number of errors before the analysis is stopped")
 
     return parser.parse_args(_args)
