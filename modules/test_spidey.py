@@ -57,5 +57,5 @@ class SpideyTest(test_template.TestTemplate):
         :return: Two paths.
         """
         discord_modules = self.agnostic_path("modules", "discord_modules-1", "discord_modules")
-        discord_desktop_core = self.agnostic_path("modules", "discord_desktop_core-1", "discord_desktop_core")
+        discord_desktop_core = self.agnostic_path("modules", "discord_desktop_core-2", "discord_desktop_core")
         return discord_modules, discord_desktop_core
